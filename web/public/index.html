@@ -28,25 +28,35 @@
 
   <div class="page-shell container-fluid">
     <div class="quick-toolbar reveal">
-      <button class="btn btn-sm btn-outline-dark" onclick="loadDemoData()">
-        <i class="bi bi-stars me-1"></i>Ornek Sema Yukle
+      <button class="btn btn-sm btn-outline-dark icon-btn" onclick="loadDemoData()" title="Ornek Sema Yukle" aria-label="Ornek Sema Yukle">
+        <i class="bi bi-stars"></i><span class="btn-label">Ornek Sema Yukle</span>
       </button>
-      <button class="btn btn-sm btn-outline-danger" onclick="resetWorkspace()">
-        <i class="bi bi-arrow-counterclockwise me-1"></i>Calisma Alanini Sifirla
+      <button class="btn btn-sm btn-outline-danger icon-btn" onclick="resetWorkspace()" title="Calisma Alanini Sifirla" aria-label="Calisma Alanini Sifirla">
+        <i class="bi bi-arrow-counterclockwise"></i><span class="btn-label">Calisma Alanini Sifirla</span>
       </button>
-      <button class="btn btn-sm btn-outline-dark" id="toggleConfigPaneBtn" title="Ctrl/Cmd + B">
-        <i class="bi bi-layout-sidebar-inset me-1"></i>Sol Panel
+      <button class="btn btn-sm btn-outline-dark icon-btn" id="openStarterBtn" title="Yeni Proje (Ctrl/Cmd + Shift + N)" aria-label="Yeni Proje">
+        <i class="bi bi-file-earmark-plus"></i><span class="btn-label">Yeni Proje</span>
       </button>
-      <button class="btn btn-sm btn-outline-dark" id="toggleZenModeBtn" title="Ctrl + Alt + Z">
-        <i class="bi bi-arrows-fullscreen me-1"></i>Zen
+      <button class="btn btn-sm btn-outline-dark icon-btn" id="toggleConfigPaneBtn" title="Sol Panel (Ctrl/Cmd + B)" aria-label="Sol Panel">
+        <i class="bi bi-layout-sidebar-inset"></i><span class="btn-label">Sol Panel</span>
       </button>
+      <button class="btn btn-sm btn-outline-dark icon-btn" id="toggleZenModeBtn" title="Zen (Ctrl + Alt + Z)" aria-label="Zen">
+        <i class="bi bi-arrows-fullscreen"></i><span class="btn-label">Zen</span>
+      </button>
+      <button class="btn btn-sm btn-outline-dark icon-btn" id="exportWorkspaceBtn" title="Calismayi Kaydet" aria-label="Calismayi Kaydet">
+        <i class="bi bi-floppy"></i><span class="btn-label">Calismayi Kaydet</span>
+      </button>
+      <button class="btn btn-sm btn-outline-dark icon-btn" id="importWorkspaceBtn" title="Calismayi Yukle" aria-label="Calismayi Yukle">
+        <i class="bi bi-folder2-open"></i><span class="btn-label">Calismayi Yukle</span>
+      </button>
+      <input type="file" id="workspaceImportInput" accept=".json" class="d-none">
       <span class="stats-chip"><i class="bi bi-table"></i>Tablo: <strong id="statTables">0</strong></span>
       <span class="stats-chip"><i class="bi bi-collection"></i>DTO: <strong id="statDtos">0</strong></span>
       <span class="stats-chip"><i class="bi bi-file-earmark-code"></i>Dosya: <strong id="statFiles">0</strong></span>
     </div>
 
     <div class="row g-3 workbench-layout">
-      <div class="col-xl-4 col-lg-5">
+      <div class="col-xl-4 col-lg-5 workbench-pane-left">
         <section class="panel config-panel reveal">
           <div class="config-workbench">
             <aside class="activity-rail">
@@ -227,7 +237,7 @@
                 </div>
 
                 <label class="form-label small">Standart dokumani</label>
-                <pre id="standardDocPreview" class="standard-doc-preview">Henuz standart analizi yapilmadi.</pre>
+                <pre id="standardDocPreview" class="standard-doc-preview">Henüz standart analizi yapılmadı.</pre>
 
                 <div class="design-doc-shell mt-4 pt-3">
                   <h6 class="panel-title mb-1">Tasarim Standardi ve Dokuman (LLM)</h6>
@@ -268,7 +278,7 @@
                     </div>
 
                     <label class="form-label small">Tasarim standarti onizleme</label>
-                    <pre id="designStandardPreview" class="standard-doc-preview">Henuz tasarim standarti uretilmedi.</pre>
+                    <pre id="designStandardPreview" class="standard-doc-preview">Henüz tasarım standardı üretilmedi.</pre>
                   </div>
 
                   <div class="settings-group">
@@ -297,7 +307,7 @@
                     </div>
 
                     <label class="form-label small">Tasarim dokumani</label>
-                    <pre id="designDocPreview" class="standard-doc-preview">Henuz tasarim dokumani uretilmedi.</pre>
+                    <pre id="designDocPreview" class="standard-doc-preview">Henüz tasarım dokümanı üretilmedi.</pre>
                   </div>
 
                   <div class="settings-group mt-3">
@@ -319,7 +329,7 @@
                         <i class="bi bi-download me-1"></i>Raporu Indir
                       </button>
                     </div>
-                    <pre id="conformancePreview" class="standard-doc-preview mb-3">Henuz uygunluk raporu uretilmedi.</pre>
+                    <pre id="conformancePreview" class="standard-doc-preview mb-3">Henüz uygunluk raporu üretilmedi.</pre>
 
                     <div class="d-flex gap-2 flex-wrap mb-2">
                       <button class="btn btn-sm btn-outline-primary" id="generateAdrPackBtn">
@@ -329,7 +339,7 @@
                         <i class="bi bi-download me-1"></i>ADR Indir
                       </button>
                     </div>
-                    <pre id="adrPackPreview" class="standard-doc-preview mb-3">Henuz ADR paketi uretilmedi.</pre>
+                    <pre id="adrPackPreview" class="standard-doc-preview mb-3">Henüz ADR paketi üretilmedi.</pre>
 
                     <div class="d-flex gap-2 flex-wrap mb-2">
                       <button class="btn btn-sm btn-outline-primary" id="generateDiagramPackBtn">
@@ -339,7 +349,7 @@
                         <i class="bi bi-download me-1"></i>Diyagramlari Indir
                       </button>
                     </div>
-                    <pre id="diagramPackPreview" class="standard-doc-preview">Henuz diyagram paketi uretilmedi.</pre>
+                    <pre id="diagramPackPreview" class="standard-doc-preview">Henüz diyagram paketi üretilmedi.</pre>
 
                     <div class="mt-3">
                       <label class="form-label small">Ek is/fonksiyon baglami (opsiyonel)</label>
@@ -353,14 +363,112 @@
                         <i class="bi bi-download me-1"></i>Analizi Indir
                       </button>
                     </div>
-                    <pre id="requirementsPreview" class="standard-doc-preview">Henuz gereksinim analizi uretilmedi.</pre>
+                    <pre id="requirementsPreview" class="standard-doc-preview">Henüz gereksinim analizi üretilmedi.</pre>
+
+                    <div class="d-flex gap-2 flex-wrap mb-2 mt-3">
+                      <button class="btn btn-sm btn-outline-primary" id="generateTaskPlanBtn">
+                        <i class="bi bi-kanban me-1"></i>Task Plani Uret
+                      </button>
+                      <button class="btn btn-sm btn-outline-light" id="downloadTaskPlanBtn">
+                        <i class="bi bi-download me-1"></i>Task Planini Indir
+                      </button>
+                    </div>
+                    <pre id="taskPlanPreview" class="standard-doc-preview">Henüz task planı üretilmedi.</pre>
+
+                    <div class="d-flex gap-2 flex-wrap mb-2 mt-3">
+                      <button class="btn btn-sm btn-outline-primary" id="extractTaskBoardBtn">
+                        <i class="bi bi-list-task me-1"></i>Tasklari Panoya Aktar
+                      </button>
+                      <button class="btn btn-sm btn-outline-dark" id="importTaskChecklistBtn">
+                        <i class="bi bi-upload me-1"></i>Checklist Yukle
+                      </button>
+                      <input type="file" id="taskChecklistImportInput" accept=".md,.txt" class="d-none">
+                      <button class="btn btn-sm btn-outline-dark" id="selectFilteredTasksBtn">
+                        <i class="bi bi-check2-all me-1"></i>Gorunenleri Sec
+                      </button>
+                      <button class="btn btn-sm btn-outline-dark" id="clearTaskSelectionBtn">
+                        <i class="bi bi-x-square me-1"></i>Secimi Temizle
+                      </button>
+                      <button class="btn btn-sm btn-outline-light" id="downloadTaskBoardCsvBtn">
+                        <i class="bi bi-filetype-csv me-1"></i>Task CSV Indir
+                      </button>
+                      <button class="btn btn-sm btn-outline-light" id="downloadTaskChecklistBtn">
+                        <i class="bi bi-card-checklist me-1"></i>Checklist Indir
+                      </button>
+                    </div>
+                    <div class="row g-2 mb-2">
+                      <div class="col-12 col-md-4">
+                        <input type="text" id="taskBoardSearch" class="form-control form-control-sm" placeholder="Task ID veya başlık ara...">
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <select id="taskBoardStatusFilter" class="form-select form-select-sm">
+                          <option value="All">Tüm Durumlar</option>
+                          <option value="Todo">Todo</option>
+                          <option value="InProgress">In Progress</option>
+                          <option value="Done">Done</option>
+                          <option value="Blocked">Blocked</option>
+                        </select>
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <select id="taskBoardSort" class="form-select form-select-sm">
+                          <option value="TaskId">Task ID (A-Z)</option>
+                          <option value="Status">Durum</option>
+                          <option value="Estimate">Tahmin</option>
+                          <option value="Title">Baslik</option>
+                        </select>
+                      </div>
+                      <div class="col-12 col-md-2">
+                        <button class="btn btn-sm btn-outline-dark w-100" id="clearTaskBoardFiltersBtn">
+                          <i class="bi bi-eraser me-1"></i>Filtreyi Temizle
+                        </button>
+                      </div>
+                      <div class="col-6 col-md-6">
+                        <select id="taskBoardBulkStatus" class="form-select form-select-sm">
+                          <option value="Todo">Todo</option>
+                          <option value="InProgress">In Progress</option>
+                          <option value="Done">Done</option>
+                          <option value="Blocked">Blocked</option>
+                        </select>
+                      </div>
+                      <div class="col-6 col-md-6">
+                        <button class="btn btn-sm btn-outline-primary w-100" id="applyTaskBoardBulkBtn">
+                          <i class="bi bi-check2-square me-1"></i>Toplu Uygula
+                        </button>
+                      </div>
+                    </div>
+                    <div id="taskBoardMeta" class="task-board-meta mb-2">Task board henuz olusturulmadi.</div>
+                    <div class="task-board-progress mb-2">
+                      <div id="taskBoardProgressBar" class="task-board-progress-bar" style="width: 0%;">0%</div>
+                    </div>
+                    <div class="table-responsive task-board-table-wrap">
+                      <table class="table table-sm table-bordered align-middle mb-0">
+                        <thead class="table-light">
+                          <tr>
+                            <th style="width: 42px;">
+                              <input type="checkbox" id="taskBoardSelectAll" class="form-check-input">
+                            </th>
+                            <th style="width: 92px;">Task ID</th>
+                            <th>Başlık</th>
+                            <th style="width: 84px;">Tahmin</th>
+                            <th style="width: 180px;">Sorumlu</th>
+                            <th style="width: 132px;">Durum</th>
+                            <th>Kabul Kriteri</th>
+                          </tr>
+                        </thead>
+                        <tbody id="taskBoardBody">
+                          <tr>
+                            <td colspan="7" class="text-muted small">Task board boş.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div class="tab-pane fade" id="tabSettings">
                 <h6 class="panel-title mb-1">Proje Ayarlari</h6>
-                <p class="section-subtitle mb-3">Adim adim ayarla, sonra tek tikla kod uret.</p>
+                <p class="section-subtitle mb-3">Adım adım ayarla, sonra tek tıkla kod üret.</p>
 
                 <div class="settings-group mb-3">
                   <div class="settings-group-title">Standart Profili</div>
@@ -501,17 +609,32 @@
         </section>
       </div>
 
-      <div class="col-xl-8 col-lg-7">
+      <div class="col-auto workbench-resizer-col d-none d-lg-flex">
+        <div
+          id="workbenchResizer"
+          class="workbench-resizer"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Panel genisligi ayari"
+          tabindex="0"
+          title="Panelleri surukleyerek yeniden boyutlandir">
+        </div>
+      </div>
+
+      <div class="col-xl-8 col-lg-7 workbench-pane-right">
         <section class="panel result-panel card reveal">
           <div class="card-header bg-dark text-light d-flex justify-content-between align-items-center">
             <span><i class="bi bi-file-earmark-code me-2"></i>Uretilen Kod</span>
             <div class="d-flex align-items-center gap-2">
               <span class="badge bg-secondary" id="generatedFileCount">0 dosya</span>
-              <button class="btn btn-sm btn-outline-light" onclick="copyCurrentCode()">
-                <i class="bi bi-clipboard me-1"></i>Kopyala
+              <button class="btn btn-sm btn-outline-light icon-btn" onclick="copyCurrentCode()" title="Kopyala" aria-label="Kopyala">
+                <i class="bi bi-clipboard"></i><span class="visually-hidden">Kopyala</span>
               </button>
-              <button class="btn btn-sm btn-outline-light" onclick="downloadAllCode()">
-                <i class="bi bi-download me-1"></i>Tumunu Indir
+              <button class="btn btn-sm btn-outline-light icon-btn" onclick="openCurrentProjectInVsCode()" title="VS Code'da Ac" aria-label="VS Code'da Ac">
+                <i class="bi bi-box-arrow-up-right"></i><span class="visually-hidden">VS Code'da Ac</span>
+              </button>
+              <button class="btn btn-sm btn-outline-light icon-btn" onclick="downloadAllCode()" title="Tumunu Indir" aria-label="Tumunu Indir">
+                <i class="bi bi-download"></i><span class="visually-hidden">Tümünü İndir</span>
               </button>
             </div>
           </div>
@@ -519,7 +642,7 @@
             <div class="editor-shell">
               <aside class="file-explorer" id="fileExplorer">
                 <div class="explorer-header">DOSYALAR</div>
-                <div class="file-explorer-empty">Henuz uretilmis dosya yok.</div>
+                <div class="file-explorer-empty">Henüz üretilmiş dosya yok.</div>
               </aside>
               <div class="code-container" id="codeContainer">
                 <div class="empty-state text-center py-5">
@@ -544,6 +667,104 @@
     <span id="statusCurrentFile">Dosya: -</span>
     <span id="statusGeneratedCount">0 dosya</span>
   </footer>
+
+  <button type="button" id="zenExitBtn" class="btn btn-sm btn-outline-light zen-exit-btn icon-btn" title="Zen Modundan Cik (Esc)" aria-label="Zen Modundan Cik">
+    <i class="bi bi-fullscreen-exit"></i><span class="btn-label">Zen Cik</span>
+  </button>
+
+  <div class="modal fade starter-modal" id="projectStartModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-rocket-takeoff me-2"></i>Baslangic Ekrani</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="starter-head mb-3">
+            <div class="starter-title">Ne olusturmak istiyorsun?</div>
+            <div class="starter-subtitle">Proje tipini sec, temel ayarlari gir, calismaya hemen basla.</div>
+          </div>
+
+          <div class="starter-grid mb-3" id="starterPresetGrid">
+            <button type="button" class="starter-template active" data-preset="webapi">
+              <i class="bi bi-hdd-network"></i>
+              <span class="starter-template-title">Web API</span>
+              <span class="starter-template-note">Controller + CRUD odakli API</span>
+            </button>
+            <button type="button" class="starter-template" data-preset="windowsservice">
+              <i class="bi bi-windows"></i>
+              <span class="starter-template-title">Windows Service</span>
+              <span class="starter-template-note">Arka plan servis isleri</span>
+            </button>
+            <button type="button" class="starter-template" data-preset="worker">
+              <i class="bi bi-arrow-repeat"></i>
+              <span class="starter-template-title">Worker Service</span>
+              <span class="starter-template-note">Queue / cron / scheduler</span>
+            </button>
+            <button type="button" class="starter-template" data-preset="grpc">
+              <i class="bi bi-diagram-2"></i>
+              <span class="starter-template-title">gRPC Service</span>
+              <span class="starter-template-note">Yuksek performans RPC</span>
+            </button>
+            <button type="button" class="starter-template" data-preset="console">
+              <i class="bi bi-terminal"></i>
+              <span class="starter-template-title">Console App</span>
+              <span class="starter-template-note">CLI ve script senaryolari</span>
+            </button>
+            <button type="button" class="starter-template" data-preset="library">
+              <i class="bi bi-collection"></i>
+              <span class="starter-template-title">Class Library</span>
+              <span class="starter-template-note">Paylasilabilir paket katmani</span>
+            </button>
+            <button type="button" class="starter-template" data-preset="documentation">
+              <i class="bi bi-journal-richtext"></i>
+              <span class="starter-template-title">Dokuman Akisi</span>
+              <span class="starter-template-note">Standart + tasarim dokumani</span>
+            </button>
+          </div>
+
+          <input type="hidden" id="starterPresetInput" value="webapi">
+
+          <div class="starter-config">
+            <div class="row g-2">
+              <div class="col-md-4">
+                <label class="form-label small">Proje Adi</label>
+                <input type="text" id="starterProjectName" class="form-control form-control-sm" value="MyApi">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small">Namespace</label>
+                <input type="text" id="starterNamespace" class="form-control form-control-sm" value="MyApi">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small">Framework</label>
+                <select id="starterFramework" class="form-select form-select-sm">
+                  <option value="net8.0">.NET 8</option>
+                  <option value="net9.0">.NET 9</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-check mt-3">
+              <input class="form-check-input" type="checkbox" id="starterClearWorkspace" checked>
+              <label class="form-check-label small" for="starterClearWorkspace">
+                Yeni projede tablo/DTO, uretilen kod ve gecici dokuman ciktilarini temizle
+              </label>
+            </div>
+
+            <div class="starter-summary mt-3" id="starterPresetSummary">
+              Secilen akisa gore panel ve ayarlar otomatik hazirlanir.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-light" data-bs-dismiss="modal">Vazgec</button>
+          <button class="btn btn-primary" id="applyStarterBtn">
+            <i class="bi bi-play-circle me-1"></i>Calismaya Basla
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="modal fade" id="tableModal" tabindex="-1">
     <div class="modal-dialog modal-lg">

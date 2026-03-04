@@ -48,4 +48,19 @@ public class DefinitionValidatorTests
 
         Assert.True(result.Success);
     }
+
+    [Fact]
+    public void Validate_ShouldPass_ForGrpcTemplateWithoutEntities()
+    {
+        var definition = new ProjectDefinition
+        {
+            Template = "grpc",
+            ProjectName = "MyGrpc",
+            RootNamespace = "MyGrpc"
+        };
+
+        var result = DefinitionValidator.Validate(definition);
+
+        Assert.True(result.Success);
+    }
 }

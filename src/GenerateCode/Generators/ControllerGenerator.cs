@@ -8,12 +8,21 @@ public class ControllerGenerator : ICodeGenerator
     private readonly ControllerDefinition _controller;
     private readonly EntityDefinition? _entity;
     private readonly string _namespace;
+    private readonly bool _optProductionPack;
+    private readonly bool _optAuthPack;
 
-    public ControllerGenerator(ControllerDefinition controller, EntityDefinition? entity, string rootNamespace)
+    public ControllerGenerator(
+        ControllerDefinition controller,
+        EntityDefinition? entity,
+        string rootNamespace,
+        bool optProductionPack = false,
+        bool optAuthPack = false)
     {
         _controller = controller;
         _entity = entity;
         _namespace = rootNamespace;
+        _optProductionPack = optProductionPack;
+        _optAuthPack = optAuthPack;
     }
 
     public string FileName => $"Controllers/{_controller.Name}Controller.cs";
@@ -38,12 +47,24 @@ public class ControllerGenerator : ICodeGenerator
 
         var sb = new StringBuilder();
         sb.AppendLine("using Microsoft.AspNetCore.Mvc;");
+        if (_optAuthPack)
+        {
+            sb.AppendLine("using Microsoft.AspNetCore.Authorization;");
+        }
+        if (_optProductionPack)
+        {
+            sb.AppendLine($"using {_namespace}.Infrastructure.Pagination;");
+        }
         sb.AppendLine($"using {_namespace}.Models;");
         sb.AppendLine($"using {_namespace}.Services;");
         sb.AppendLine();
         sb.AppendLine($"namespace {_namespace}.Controllers;");
         sb.AppendLine();
         sb.AppendLine("[ApiController]");
+        if (_optAuthPack)
+        {
+            sb.AppendLine("[Authorize]");
+        }
         sb.AppendLine($"[Route(\"{route}\")]");
         sb.AppendLine($"public class {_controller.Name}Controller : ControllerBase");
         sb.AppendLine("{");
@@ -62,6 +83,16 @@ public class ControllerGenerator : ICodeGenerator
         sb.AppendLine("        return Ok(await _service.GetAllAsync());");
         sb.AppendLine("    }");
         sb.AppendLine();
+
+        if (_optProductionPack)
+        {
+            sb.AppendLine("    [HttpGet(\"paged\")]");
+            sb.AppendLine($"    public async Task<ActionResult<PagedResult<{entityName}>>> GetPaged([FromQuery] PageRequest request)");
+            sb.AppendLine("    {");
+            sb.AppendLine("        return Ok(await _service.GetPagedAsync(request));");
+            sb.AppendLine("    }");
+            sb.AppendLine();
+        }
 
         // GET by id
         sb.AppendLine($"    [HttpGet(\"{{{ToCamelCase(keyName)}}}\")]");
@@ -93,6 +124,10 @@ public class ControllerGenerator : ICodeGenerator
         sb.AppendLine();
 
         // DELETE
+        if (_optAuthPack)
+        {
+            sb.AppendLine("    [Authorize(Roles = \"Admin\")]");
+        }
         sb.AppendLine($"    [HttpDelete(\"{{{ToCamelCase(keyName)}}}\")]");
         sb.AppendLine($"    public async Task<IActionResult> Delete({keyType} {ToCamelCase(keyName)})");
         sb.AppendLine("    {");
@@ -113,6 +148,10 @@ public class ControllerGenerator : ICodeGenerator
 
         var sb = new StringBuilder();
         sb.AppendLine("using Microsoft.AspNetCore.Mvc;");
+        if (_optAuthPack)
+        {
+            sb.AppendLine("using Microsoft.AspNetCore.Authorization;");
+        }
 
         if (_entity != null)
         {
@@ -124,6 +163,10 @@ public class ControllerGenerator : ICodeGenerator
         sb.AppendLine($"namespace {_namespace}.Controllers;");
         sb.AppendLine();
         sb.AppendLine("[ApiController]");
+        if (_optAuthPack)
+        {
+            sb.AppendLine("[Authorize]");
+        }
         sb.AppendLine($"[Route(\"{route}\")]");
         sb.AppendLine($"public class {_controller.Name}Controller : ControllerBase");
         sb.AppendLine("{");

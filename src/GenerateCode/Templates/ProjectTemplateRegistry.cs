@@ -7,8 +7,10 @@ public static class ProjectTemplateRegistry
         {
             ["webapi"] = () => new WebApiTemplate(),
             ["worker"] = () => new WorkerTemplate(),
+            ["windowsservice"] = () => new WindowsServiceTemplate(),
             ["console"] = () => new ConsoleTemplate(),
-            ["library"] = () => new ClassLibraryTemplate()
+            ["library"] = () => new ClassLibraryTemplate(),
+            ["grpc"] = () => new GrpcTemplate()
         };
 
     public static bool TryResolve(string templateName, out IProjectTemplate template)

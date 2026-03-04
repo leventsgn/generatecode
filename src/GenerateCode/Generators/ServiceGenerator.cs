@@ -7,11 +7,13 @@ public class ServiceGenerator : ICodeGenerator
 {
     private readonly EntityDefinition _entity;
     private readonly string _namespace;
+    private readonly bool _optProductionPack;
 
-    public ServiceGenerator(EntityDefinition entity, string rootNamespace)
+    public ServiceGenerator(EntityDefinition entity, string rootNamespace, bool optProductionPack = false)
     {
         _entity = entity;
         _namespace = rootNamespace;
+        _optProductionPack = optProductionPack;
     }
 
     public string FileName => $"Services/{_entity.Name}Service.cs";
@@ -25,6 +27,11 @@ public class ServiceGenerator : ICodeGenerator
 
         var sb = new StringBuilder();
         sb.AppendLine("using Microsoft.EntityFrameworkCore;");
+        if (_optProductionPack)
+        {
+            sb.AppendLine("using System.Reflection;");
+            sb.AppendLine($"using {_namespace}.Infrastructure.Pagination;");
+        }
         sb.AppendLine($"using {_namespace}.Data;");
         sb.AppendLine($"using {_namespace}.Models;");
         sb.AppendLine();
@@ -46,6 +53,48 @@ public class ServiceGenerator : ICodeGenerator
         sb.AppendLine($"        return await _context.{entityName}s.ToListAsync();");
         sb.AppendLine("    }");
         sb.AppendLine();
+
+        if (_optProductionPack)
+        {
+            sb.AppendLine($"    public async Task<PagedResult<{entityName}>> GetPagedAsync(PageRequest request)");
+            sb.AppendLine("    {");
+            sb.AppendLine($"        var list = await _context.{entityName}s.AsNoTracking().ToListAsync();");
+            sb.AppendLine($"        IEnumerable<{entityName}> query = list;");
+            sb.AppendLine();
+            sb.AppendLine($"        var textProps = typeof({entityName})");
+            sb.AppendLine("            .GetProperties(BindingFlags.Public | BindingFlags.Instance)");
+            sb.AppendLine("            .Where(prop => prop.PropertyType == typeof(string))");
+            sb.AppendLine("            .ToArray();");
+            sb.AppendLine();
+            sb.AppendLine("        if (!string.IsNullOrWhiteSpace(request.Filter) && textProps.Length > 0)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            query = query.Where(item => textProps.Any(prop =>");
+            sb.AppendLine("            {");
+            sb.AppendLine("                var value = prop.GetValue(item) as string;");
+            sb.AppendLine("                return !string.IsNullOrWhiteSpace(value) && value.Contains(request.Filter, StringComparison.OrdinalIgnoreCase);");
+            sb.AppendLine("            }));");
+            sb.AppendLine("        }");
+            sb.AppendLine();
+            sb.AppendLine("        if (!string.IsNullOrWhiteSpace(request.SortBy))");
+            sb.AppendLine("        {");
+            sb.AppendLine($"            var sortProp = typeof({entityName})");
+            sb.AppendLine("                .GetProperty(request.SortBy, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);");
+            sb.AppendLine("            if (sortProp != null)");
+            sb.AppendLine("            {");
+            sb.AppendLine("                query = request.Desc");
+            sb.AppendLine("                    ? query.OrderByDescending(item => sortProp.GetValue(item, null))");
+            sb.AppendLine("                    : query.OrderBy(item => sortProp.GetValue(item, null));");
+            sb.AppendLine("            }");
+            sb.AppendLine("        }");
+            sb.AppendLine();
+            sb.AppendLine("        var pageNumber = Math.Max(request.PageNumber, 1);");
+            sb.AppendLine("        var pageSize = Math.Clamp(request.PageSize, 1, 200);");
+            sb.AppendLine("        var totalCount = query.Count();");
+            sb.AppendLine("        var items = query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();");
+            sb.AppendLine($"        return new PagedResult<{entityName}>(items, totalCount, pageNumber, pageSize);");
+            sb.AppendLine("    }");
+            sb.AppendLine();
+        }
 
         // GetById
         sb.AppendLine($"    public async Task<{entityName}?> GetByIdAsync({keyType} {ToCamelCase(keyName)})");

@@ -1,0 +1,6 @@
+{
+  "template": "windowsservice",
+  "projectName": "HealthMonitorService",
+  "rootNamespace": "HealthMonitorService",
+  "targetFramework": "net8.0"
+}

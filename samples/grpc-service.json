@@ -1,0 +1,6 @@
+{
+  "template": "grpc",
+  "projectName": "MessagingGrpc",
+  "rootNamespace": "MessagingGrpc",
+  "targetFramework": "net8.0"
+}

@@ -502,6 +502,46 @@ function buildRequirementsAnalysisMessages(targetProject, designStandard, busine
   ];
 }
 
+function buildTaskPlanMessages(targetProject, designStandard, requirementsDocument, businessContext) {
+  const standardPayload = designStandard && typeof designStandard === 'object' ? designStandard : {};
+  const requirementsPayload = String(requirementsDocument || '').trim();
+  const contextPayload = String(businessContext || '').trim();
+
+  return [
+    {
+      role: 'system',
+      content: 'You are a senior technical project manager and software architect. Return ONLY markdown.'
+    },
+    {
+      role: 'user',
+      content: [
+        'Create an actionable implementation task plan in Turkish for the given project.',
+        'Output markdown with these sections in order:',
+        '1) Plan Ozeti',
+        '2) Epic Listesi (EPIC-001 formatinda)',
+        '3) Sprint Plani (Sprint 1/2/3 hedefleri)',
+        '4) Gorev Backlogu (TASK-001 formatinda, tahmin: XS/S/M/L)',
+        '5) Bagimliliklar',
+        '6) Riskler ve Azaltma Aksiyonlari',
+        '7) Definition of Done',
+        'Each task must include an acceptance criterion bullet and owner role suggestion.',
+        'Avoid generic placeholders; produce concrete technical tasks.',
+        '',
+        `Business context (optional): ${contextPayload || '-'}`,
+        '',
+        'Design standard (optional context):',
+        JSON.stringify(standardPayload, null, 2),
+        '',
+        'Requirements analysis markdown (optional context):',
+        requirementsPayload || '-',
+        '',
+        'Target project summary:',
+        JSON.stringify(targetProject, null, 2)
+      ].join('\n')
+    }
+  ];
+}
+
 async function executeChatCompletion(llmConfig, requestBody) {
   let response;
   try {
@@ -955,6 +995,63 @@ router.post('/analyze-requirements', async (req, res) => {
   return res.json({
     success: true,
     requirementsDocument,
+    meta: {
+      provider: 'groq-openai-compatible',
+      model: requestBody.model,
+      baseUrl: llmConfig.baseUrl
+    }
+  });
+});
+
+router.post('/generate-task-plan', async (req, res) => {
+  const llmConfig = resolveLlmConfig(req.body?.llmConfig);
+  if (!ensureLlmConfig(llmConfig, res)) {
+    return undefined;
+  }
+
+  const targetProject = req.body?.targetProject;
+  if (!targetProject || typeof targetProject !== 'object') {
+    return res.status(400).json({
+      success: false,
+      message: 'targetProject payload is required.'
+    });
+  }
+
+  const designStandard = req.body?.designStandard && typeof req.body.designStandard === 'object'
+    ? req.body.designStandard
+    : null;
+  const requirementsDocument = String(req.body?.requirementsDocument || '').trim().slice(0, 30000);
+  const businessContext = String(req.body?.businessContext || '').trim().slice(0, 8000);
+
+  const requestBody = {
+    model: llmConfig.model,
+    temperature: 0.2,
+    messages: buildTaskPlanMessages(targetProject, designStandard, requirementsDocument, businessContext)
+  };
+
+  let result;
+  try {
+    result = await executeChatCompletion(llmConfig, requestBody);
+  } catch (error) {
+    return res.status(502).json({
+      success: false,
+      message: error.message,
+      detail: error.detail || ''
+    });
+  }
+
+  const content = result?.choices?.[0]?.message?.content || '';
+  const taskPlanDocument = extractMarkdownPayload(content);
+  if (!taskPlanDocument) {
+    return res.status(502).json({
+      success: false,
+      message: 'LLM response did not include a task plan.'
+    });
+  }
+
+  return res.json({
+    success: true,
+    taskPlanDocument,
     meta: {
       provider: 'groq-openai-compatible',
       model: requestBody.model,

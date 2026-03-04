@@ -43,11 +43,16 @@ public static class DefinitionParser
             Template = "webapi",
             ProjectName = api.ProjectName,
             RootNamespace = api.RootNamespace,
+            TargetFramework = api.TargetFramework,
             DatabaseProvider = api.DatabaseProvider,
+            UseSwagger = api.UseSwagger,
+            OptAuthPack = api.OptAuthPack,
+            OptProductionPack = api.OptProductionPack,
+            OptTestGeneration = api.OptTestGeneration,
+            OptEfMigrations = api.OptEfMigrations,
+            OptPostmanExport = api.OptPostmanExport,
             Entities = api.Entities,
-            Controllers = api.Controllers,
-            TargetFramework = "net8.0",
-            UseSwagger = true
+            Controllers = api.Controllers
         };
     }
 }

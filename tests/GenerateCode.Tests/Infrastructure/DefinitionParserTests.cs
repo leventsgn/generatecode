@@ -41,4 +41,35 @@ public class DefinitionParserTests
         Assert.Equal("console", definition.Template);
         Assert.Equal("Jobs", definition.ProjectName);
     }
+
+    [Fact]
+    public void Parse_ShouldMapAdvancedWebApiOptions()
+    {
+        const string json = """
+{
+  "template": "webapi",
+  "projectName": "AdvancedApi",
+  "rootNamespace": "AdvancedApi",
+  "targetFramework": "net8.0",
+  "databaseProvider": "PostgreSQL",
+  "useSwagger": false,
+  "optAuthPack": true,
+  "optProductionPack": true,
+  "optTestGeneration": true,
+  "optEfMigrations": true,
+  "optPostmanExport": true
+}
+""";
+
+        var definition = DefinitionParser.Parse(json);
+
+        Assert.Equal("webapi", definition.Template);
+        Assert.Equal("PostgreSQL", definition.DatabaseProvider);
+        Assert.False(definition.UseSwagger);
+        Assert.True(definition.OptAuthPack);
+        Assert.True(definition.OptProductionPack);
+        Assert.True(definition.OptTestGeneration);
+        Assert.True(definition.OptEfMigrations);
+        Assert.True(definition.OptPostmanExport);
+    }
 }

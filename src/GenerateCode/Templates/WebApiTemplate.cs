@@ -14,7 +14,14 @@ public sealed class WebApiTemplate : IProjectTemplate
         {
             ProjectName = definition.ProjectName,
             RootNamespace = definition.RootNamespace,
+            TargetFramework = definition.TargetFramework,
             DatabaseProvider = definition.DatabaseProvider,
+            UseSwagger = definition.UseSwagger,
+            OptAuthPack = definition.OptAuthPack,
+            OptProductionPack = definition.OptProductionPack,
+            OptTestGeneration = definition.OptTestGeneration,
+            OptEfMigrations = definition.OptEfMigrations,
+            OptPostmanExport = definition.OptPostmanExport,
             Entities = definition.Entities,
             Controllers = definition.Controllers
         };

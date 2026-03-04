@@ -1,0 +1,25 @@
+{
+  "template": "webapi",
+  "projectName": "CommerceApi",
+  "rootNamespace": "CommerceApi",
+  "targetFramework": "net8.0",
+  "databaseProvider": "PostgreSQL",
+  "useSwagger": true,
+  "optAuthPack": true,
+  "optProductionPack": true,
+  "optTestGeneration": true,
+  "optEfMigrations": true,
+  "optPostmanExport": true,
+  "entities": [
+    {
+      "name": "Product",
+      "generateCrud": true,
+      "properties": [
+        { "name": "Id", "type": "int", "isKey": true },
+        { "name": "Name", "type": "string", "isRequired": true, "maxLength": 120 },
+        { "name": "Price", "type": "decimal", "isRequired": true }
+      ]
+    }
+  ],
+  "controllers": []
+}

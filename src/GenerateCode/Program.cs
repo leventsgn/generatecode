@@ -1,5 +1,6 @@
 using System.Text.Json;
 using GenerateCode.Infrastructure;
+using GenerateCode.Models;
 using GenerateCode.Templates;
 using GenerateCode.Validation;
 
@@ -33,6 +34,7 @@ public class Program
         {
             var json = File.ReadAllText(options.InputFile);
             var definition = DefinitionParser.Parse(json, options.TemplateOverride);
+            ApplyFlagOverrides(options, definition);
             var validation = DefinitionValidator.Validate(definition);
             if (!validation.Success)
             {
@@ -171,6 +173,21 @@ public class Program
                 case "--smoke-build":
                     options.SmokeBuild = true;
                     break;
+                case "--auth-pack":
+                    options.OptAuthPack = true;
+                    break;
+                case "--production-pack":
+                    options.OptProductionPack = true;
+                    break;
+                case "--test-generation":
+                    options.OptTestGeneration = true;
+                    break;
+                case "--ef-migrations":
+                    options.OptEfMigrations = true;
+                    break;
+                case "--postman-export":
+                    options.OptPostmanExport = true;
+                    break;
                 default:
                     if (arg.StartsWith("-", StringComparison.Ordinal))
                     {
@@ -196,6 +213,34 @@ public class Program
         }
 
         return true;
+    }
+
+    private static void ApplyFlagOverrides(CliOptions options, ProjectDefinition definition)
+    {
+        if (options.OptAuthPack)
+        {
+            definition.OptAuthPack = true;
+        }
+
+        if (options.OptProductionPack)
+        {
+            definition.OptProductionPack = true;
+        }
+
+        if (options.OptTestGeneration)
+        {
+            definition.OptTestGeneration = true;
+        }
+
+        if (options.OptEfMigrations)
+        {
+            definition.OptEfMigrations = true;
+        }
+
+        if (options.OptPostmanExport)
+        {
+            definition.OptPostmanExport = true;
+        }
     }
 
     private static bool TryGetValue(string[] args, ref int index, out string value, out string error)
@@ -225,12 +270,17 @@ public class Program
         Console.WriteLine("  output-directory  Output directory (default: 'output')");
         Console.WriteLine();
         Console.WriteLine("Options:");
-        Console.WriteLine("  --template <name>       Override template from JSON (webapi, worker, console, library)");
+        Console.WriteLine("  --template <name>       Override template from JSON (webapi, worker, windowsservice, console, library, grpc)");
         Console.WriteLine("  --output <path>         Set output directory");
         Console.WriteLine("  --overwrite <mode>      Overwrite mode: Overwrite, Skip, Error");
         Console.WriteLine("  --preview               Print file list before writing");
         Console.WriteLine("  --dry-run               Validate and render file list only");
         Console.WriteLine("  --smoke-build           Run 'dotnet build' after generation");
+        Console.WriteLine("  --auth-pack             Enable JWT + refresh token scaffold");
+        Console.WriteLine("  --production-pack       Enable pagination/filter + global exception middleware");
+        Console.WriteLine("  --test-generation       Generate xUnit + Moq test skeleton");
+        Console.WriteLine("  --ef-migrations         Generate migration + seed scaffold");
+        Console.WriteLine("  --postman-export        Generate Postman collection JSON");
         Console.WriteLine();
         Console.WriteLine("Example:");
         Console.WriteLine("  GenerateCode samples/petstore-api.json ./output --template webapi --smoke-build");
@@ -244,6 +294,11 @@ public class Program
         public bool Preview { get; set; }
         public bool DryRun { get; set; }
         public bool SmokeBuild { get; set; }
+        public bool OptAuthPack { get; set; }
+        public bool OptProductionPack { get; set; }
+        public bool OptTestGeneration { get; set; }
+        public bool OptEfMigrations { get; set; }
+        public bool OptPostmanExport { get; set; }
         public OverwriteMode OverwriteMode { get; set; } = OverwriteMode.Overwrite;
         public bool OutputSpecified { get; set; }
     }

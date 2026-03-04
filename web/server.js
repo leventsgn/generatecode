@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const dbRoutes = require('./routes/database');
 const llmRoutes = require('./routes/llm');
+const workspaceRoutes = require('./routes/workspace');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,6 +12,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/database', dbRoutes);
 app.use('/api/llm', llmRoutes);
+app.use('/api/workspace', workspaceRoutes);
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

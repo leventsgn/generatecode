@@ -10,8 +10,10 @@ It supports both:
 
 - `webapi` (existing API generator)
 - `worker`
+- `windowsservice`
 - `console`
 - `library`
+- `grpc`
 
 ## Features
 
@@ -20,6 +22,20 @@ It supports both:
 - Preview / dry-run mode
 - Safe file writing with overwrite strategy (`Overwrite`, `Skip`, `Error`)
 - Optional smoke build (`dotnet build`) after generation
+- Turkish character support in UI search/filter flows (`ç, ğ, ı, İ, ö, ş, ü`)
+- Workspace save/load support (`.workspace.json` export/import to continue later)
+- Web API advanced packs:
+  - Auth Pack (`JWT + Refresh Token + role/permission`)
+  - Production Pack (`pagination/filter/sort + global exception middleware + ProblemDetails`)
+  - Test scaffold (`xUnit + Moq`, EF InMemory unit tests + WebApplicationFactory integration tests)
+  - EF scaffold (`seed data + AppDbContextFactory + migration starter files`)
+  - Postman export (`postman collection json + .http request samples`)
+- Web UI LLM outputs:
+  - Project/design standard extraction and enhancement
+  - Design document generation
+  - Conformance report, ADR pack, Mermaid diagram pack
+  - Requirements analysis and implementation task plan generation
+  - Task plan to interactive task board parsing with fallback parsing, checklist import, filter/sort/progress, selection-based bulk update, CSV and checklist export
 
 ## Usage
 
@@ -35,6 +51,11 @@ Options:
 - `--preview`: print generated file list before writing
 - `--dry-run`: validate and render file list only (no writes)
 - `--smoke-build`: run `dotnet build` in generated project
+- `--auth-pack`: enable JWT + refresh token scaffold (webapi)
+- `--production-pack`: enable pagination/filter + global exception middleware (webapi)
+- `--test-generation`: generate xUnit + Moq test scaffold (webapi)
+- `--ef-migrations`: generate migration + seed scaffold files (webapi)
+- `--postman-export`: generate Postman collection JSON (webapi)
 
 ## Examples
 
@@ -48,6 +69,18 @@ Generate a Worker Service:
 
 ```bash
 dotnet run --project src/GenerateCode -- samples/worker-service.json ./output --smoke-build
+```
+
+Generate a gRPC service:
+
+```bash
+dotnet run --project src/GenerateCode -- samples/grpc-service.json ./output --smoke-build
+```
+
+Generate an advanced Web API package:
+
+```bash
+dotnet run --project src/GenerateCode -- samples/petstore-api.json ./output --template webapi --auth-pack --production-pack --test-generation --ef-migrations --postman-export
 ```
 
 ## Definition format
@@ -72,6 +105,26 @@ Template-based format:
   "projectName": "MyWorker",
   "rootNamespace": "MyWorker",
   "targetFramework": "net8.0"
+}
+```
+
+Advanced Web API format (optional packs):
+
+```json
+{
+  "template": "webapi",
+  "projectName": "CommerceApi",
+  "rootNamespace": "CommerceApi",
+  "targetFramework": "net8.0",
+  "databaseProvider": "PostgreSQL",
+  "useSwagger": true,
+  "optAuthPack": true,
+  "optProductionPack": true,
+  "optTestGeneration": true,
+  "optEfMigrations": true,
+  "optPostmanExport": true,
+  "entities": [],
+  "controllers": []
 }
 ```
 
@@ -113,3 +166,10 @@ Backend endpoints:
 
 - `GET /api/llm/status`: configuration/model status
 - `POST /api/llm/enhance-standard`: improves a standard profile and document
+- `POST /api/llm/derive-design-standard`: derives a reusable design standard from uploaded project files
+- `POST /api/llm/generate-design-document`: generates design document markdown
+- `POST /api/llm/generate-conformance-report`: generates conformance report markdown
+- `POST /api/llm/generate-adr-pack`: generates ADR markdown pack
+- `POST /api/llm/generate-diagram-pack`: generates Mermaid diagram pack
+- `POST /api/llm/analyze-requirements`: generates requirements analysis markdown
+- `POST /api/llm/generate-task-plan`: generates actionable implementation task plan markdown
