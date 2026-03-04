@@ -36,7 +36,10 @@ body {
   font-family: "Segoe UI", Tahoma, Arial, sans-serif;
   font-size: 14px;
   overscroll-behavior: none;
-  padding-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow: hidden;
 }
 
 * {
@@ -111,10 +114,12 @@ body {
 }
 
 .page-shell {
-  min-height: calc(100vh - 68px);
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 12px;
+  padding: 10px 12px;
+  overflow: hidden;
 }
 
 .quick-toolbar {
@@ -485,10 +490,8 @@ body {
 }
 
 .status-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
+  flex-shrink: 0;
   min-height: 24px;
   display: flex;
   align-items: center;
@@ -506,7 +509,7 @@ body {
 }
 
 body.zen-mode {
-  padding-bottom: 0;
+  overflow: hidden;
 }
 
 body.zen-mode .app-header,
@@ -516,7 +519,8 @@ body.zen-mode .status-bar {
 }
 
 body.zen-mode .page-shell {
-  min-height: 100vh;
+  min-height: 0;
+  flex: 1;
   padding: 0;
 }
 
@@ -896,7 +900,8 @@ select:-webkit-autofill:focus {
 
 @media (max-width: 991px) {
   .page-shell {
-    min-height: auto;
+    min-height: 0;
+    flex: 1;
     padding: 10px;
   }
 
