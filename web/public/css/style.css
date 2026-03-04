@@ -36,6 +36,7 @@ body {
   font-family: "Segoe UI", Tahoma, Arial, sans-serif;
   font-size: 14px;
   overscroll-behavior: none;
+  padding-bottom: 24px;
 }
 
 * {
@@ -122,6 +123,10 @@ body {
   align-items: center;
   gap: 8px;
   margin-bottom: 10px;
+  background: #252526;
+  border: 1px solid var(--vsc-border);
+  border-radius: 6px;
+  padding: 8px 10px;
 }
 
 .stats-chip {
@@ -141,6 +146,10 @@ body {
   min-height: 0;
 }
 
+.workbench-layout {
+  align-items: stretch;
+}
+
 .page-shell .row.g-3 > [class*="col-"] {
   display: flex;
   min-height: 0;
@@ -155,11 +164,58 @@ body {
 }
 
 .config-panel {
-  padding: 12px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
   min-height: 0;
+  overflow: hidden;
+}
+
+.config-workbench {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.config-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.panel-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--vsc-border);
+  background: #2d2d30;
+}
+
+.panel-toolbar-title {
+  color: #f0f0f0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.panel-toolbar-hint {
+  color: var(--vsc-text-muted);
+  font-size: 11px;
+}
+
+.activity-rail {
+  width: 64px;
+  border-right: 1px solid var(--vsc-border);
+  background: #2d2d30;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 8px 6px;
+  gap: 6px;
 }
 
 .result-panel {
@@ -195,20 +251,24 @@ body {
 }
 
 .tabs-shell {
-  border: 1px solid var(--vsc-border);
-  border-radius: 6px;
-  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  overflow: hidden auto;
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  background: var(--vsc-bg-2);
 }
 
 .nav-tabs#configTabs {
   border-bottom: 1px solid var(--vsc-border);
   background: var(--vsc-bg-3);
-  padding: 6px 6px 0;
+  padding: 7px 8px 0;
   gap: 4px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .nav-tabs#configTabs .nav-link {
@@ -234,50 +294,43 @@ body {
   min-height: 0;
   overflow: auto;
   scrollbar-gutter: stable;
-}
-
-.workflow-strip {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
+  padding-top: 12px;
 }
 
 .workflow-step {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  border: 1px solid var(--vsc-border);
+  gap: 2px;
+  border: 0;
   border-radius: 6px;
-  background: #2b2b2f;
+  background: transparent;
   color: #cfd3d8;
-  font-size: 0.74rem;
-  font-weight: 600;
-  padding: 7px 8px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 6px 4px;
+  min-height: 52px;
+  flex-direction: column;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .workflow-step:hover {
   color: #ffffff;
-  background: #34343a;
-  border-color: #5b5b63;
+  background: #3a3a40;
 }
 
 .workflow-step.active {
   color: #e9f4ff;
-  background: linear-gradient(180deg, #0f4f79 0%, #0a3f61 100%);
-  border-color: #2b7bb2;
+  background: #0e639c;
 }
 
-.workflow-step .step-index {
-  width: 18px;
-  height: 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.25);
-  font-size: 0.68rem;
+.activity-item i {
+  font-size: 15px;
+}
+
+.activity-label {
+  line-height: 1;
+  letter-spacing: 0.02em;
 }
 
 .settings-group {
@@ -411,19 +464,36 @@ body {
 }
 
 .generate-wrap {
-  position: sticky;
-  bottom: 8px;
-  margin-top: 12px;
-  background: rgba(37, 37, 38, 0.95);
-  border: 1px solid var(--vsc-border);
-  border-radius: 6px;
-  padding: 10px;
+  border-top: 1px solid var(--vsc-border);
+  background: #252526;
+  padding: 10px 12px 12px;
 }
 
 .generate-hint {
   margin-top: 6px;
   color: var(--vsc-text-muted);
   font-size: 0.75rem;
+}
+
+.status-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 10px;
+  background: #007acc;
+  color: #eaf6ff;
+  border-top: 1px solid #1b8dd2;
+  font-size: 11px;
+  z-index: 30;
+}
+
+.status-spacer {
+  flex: 1;
 }
 
 .btn-generate {
@@ -803,8 +873,35 @@ select:-webkit-autofill:focus {
     min-height: 330px;
   }
 
-  .workflow-strip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .config-workbench {
+    flex-direction: column;
+  }
+
+  .activity-rail {
+    width: 100%;
+    border-right: 0;
+    border-bottom: 1px solid var(--vsc-border);
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 6px;
+    gap: 4px;
+  }
+
+  .workflow-step {
+    flex: 1;
+    min-height: 44px;
+  }
+
+  .panel-toolbar-hint {
+    display: none;
+  }
+
+  .status-bar {
+    gap: 6px;
+    padding: 4px 8px;
+    font-size: 10px;
+    overflow-x: auto;
+    white-space: nowrap;
   }
 
   .editor-shell {
@@ -818,5 +915,15 @@ select:-webkit-autofill:focus {
     max-height: 220px;
     border-right: 0;
     border-bottom: 1px solid var(--vsc-border);
+  }
+}
+
+@media (min-width: 992px) {
+  .nav-tabs#configTabs {
+    display: none;
+  }
+
+  .tab-content {
+    padding-top: 8px;
   }
 }

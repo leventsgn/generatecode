@@ -39,33 +39,39 @@
       <span class="stats-chip"><i class="bi bi-file-earmark-code"></i>Dosya: <strong id="statFiles">0</strong></span>
     </div>
 
-    <div class="row g-3">
-      <div class="col-lg-5">
+    <div class="row g-3 workbench-layout">
+      <div class="col-xl-4 col-lg-5">
         <section class="panel config-panel reveal">
-          <div class="workflow-strip">
-            <button type="button" class="workflow-step" data-target="#tabDatabase">
-              <span class="step-index">1</span>
-              <span class="step-label">Veritabani</span>
-            </button>
-            <button type="button" class="workflow-step" data-target="#tabTables">
-              <span class="step-index">2</span>
-              <span class="step-label">Tablolar</span>
-            </button>
-            <button type="button" class="workflow-step" data-target="#tabRequests">
-              <span class="step-index">3</span>
-              <span class="step-label">DTO</span>
-            </button>
-            <button type="button" class="workflow-step" data-target="#tabStandards">
-              <span class="step-index">4</span>
-              <span class="step-label">Standartlar</span>
-            </button>
-            <button type="button" class="workflow-step" data-target="#tabSettings">
-              <span class="step-index">5</span>
-              <span class="step-label">Ayarlar</span>
-            </button>
-          </div>
+          <div class="config-workbench">
+            <aside class="activity-rail">
+              <button type="button" class="workflow-step activity-item" data-target="#tabTables" title="Tablolar">
+                <i class="bi bi-table"></i>
+                <span class="activity-label">Tablo</span>
+              </button>
+              <button type="button" class="workflow-step activity-item" data-target="#tabRequests" title="Request/Response">
+                <i class="bi bi-arrow-up-circle"></i>
+                <span class="activity-label">DTO</span>
+              </button>
+              <button type="button" class="workflow-step activity-item" data-target="#tabDatabase" title="Veritabani">
+                <i class="bi bi-database"></i>
+                <span class="activity-label">DB</span>
+              </button>
+              <button type="button" class="workflow-step activity-item" data-target="#tabStandards" title="Standartlar">
+                <i class="bi bi-diagram-3"></i>
+                <span class="activity-label">Std</span>
+              </button>
+              <button type="button" class="workflow-step activity-item" data-target="#tabSettings" title="Ayarlar">
+                <i class="bi bi-gear"></i>
+                <span class="activity-label">Ayar</span>
+              </button>
+            </aside>
 
-          <div class="tabs-shell">
+            <div class="config-main">
+              <div class="panel-toolbar">
+                <div class="panel-toolbar-title" id="activeTabLabel">Tablolar</div>
+                <div class="panel-toolbar-hint">VS Code Workbench</div>
+              </div>
+              <div class="tabs-shell">
             <ul class="nav nav-tabs" id="configTabs">
               <li class="nav-item">
                 <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabTables">
@@ -476,18 +482,20 @@
             </div>
           </div>
 
-          <div class="generate-wrap">
-            <div class="d-grid">
-              <button class="btn btn-lg btn-success btn-generate" onclick="generateCode()">
-                <i class="bi bi-lightning-charge-fill me-2"></i>Kod Uret
-              </button>
+              <div class="generate-wrap">
+                <div class="d-grid">
+                  <button class="btn btn-lg btn-success btn-generate" onclick="generateCode()">
+                    <i class="bi bi-lightning-charge-fill me-2"></i>Kod Uret
+                  </button>
+                </div>
+                <div class="generate-hint">Ipu cu: Form alanlari otomatik kaydedilir.</div>
+              </div>
             </div>
-            <div class="generate-hint">Ipu cu: Form alanlari otomatik kaydedilir.</div>
           </div>
         </section>
       </div>
 
-      <div class="col-lg-7">
+      <div class="col-xl-8 col-lg-7">
         <section class="panel result-panel card reveal">
           <div class="card-header bg-dark text-light d-flex justify-content-between align-items-center">
             <span><i class="bi bi-file-earmark-code me-2"></i>Uretilen Kod</span>
@@ -520,6 +528,15 @@
       </div>
     </div>
   </div>
+
+  <footer class="status-bar">
+    <span id="statusActiveTab">Tab: Tablolar</span>
+    <span id="statusProjectType">Tip: Web API</span>
+    <span id="statusActiveStandard">Standart: Yok</span>
+    <span class="status-spacer"></span>
+    <span id="statusCurrentFile">Dosya: -</span>
+    <span id="statusGeneratedCount">0 dosya</span>
+  </footer>
 
   <div class="modal fade" id="tableModal" tabindex="-1">
     <div class="modal-dialog modal-lg">

@@ -308,6 +308,28 @@ function updateStats() {
   document.getElementById('statDtos').textContent = String(state.dtos.length);
   document.getElementById('statFiles').textContent = String(Object.keys(state.generatedFiles).length);
   document.getElementById('generatedFileCount').textContent = `${Object.keys(state.generatedFiles).length} dosya`;
+  updateStatusBar();
+}
+
+function updateStatusBar() {
+  const projectTypeSelect = document.getElementById('projectType');
+  const activeTabText = document.getElementById('activeTabLabel')?.textContent?.trim() || 'Tablolar';
+  const projectTypeText = projectTypeSelect?.selectedOptions?.[0]?.textContent?.trim() || 'Web API';
+  const activeStandard = getActiveStandardProfile();
+  const generatedFileCount = Object.keys(state.generatedFiles).length;
+  const currentFileText = state.currentFile || '-';
+
+  const statusActiveTab = document.getElementById('statusActiveTab');
+  const statusProjectType = document.getElementById('statusProjectType');
+  const statusActiveStandard = document.getElementById('statusActiveStandard');
+  const statusCurrentFile = document.getElementById('statusCurrentFile');
+  const statusGeneratedCount = document.getElementById('statusGeneratedCount');
+
+  if (statusActiveTab) statusActiveTab.textContent = `Tab: ${activeTabText}`;
+  if (statusProjectType) statusProjectType.textContent = `Tip: ${projectTypeText}`;
+  if (statusActiveStandard) statusActiveStandard.textContent = `Standart: ${activeStandard?.name || 'Yok'}`;
+  if (statusCurrentFile) statusCurrentFile.textContent = `Dosya: ${currentFileText}`;
+  if (statusGeneratedCount) statusGeneratedCount.textContent = `${generatedFileCount} dosya`;
 }
 
 function openConfigTab(tabTarget) {
@@ -320,9 +342,15 @@ function openConfigTab(tabTarget) {
 function updateWorkflowSteps() {
   const activeTab = document.querySelector('#configTabs .nav-link.active');
   const activeTarget = activeTab?.getAttribute('data-bs-target') || '';
+  const activeLabel = activeTab?.textContent?.trim() || 'Tablolar';
   document.querySelectorAll('.workflow-step').forEach(step => {
     step.classList.toggle('active', step.dataset.target === activeTarget);
   });
+  const activeTabLabel = document.getElementById('activeTabLabel');
+  if (activeTabLabel) {
+    activeTabLabel.textContent = activeLabel;
+  }
+  updateStatusBar();
 }
 
 function setLlmConfigHint(message, tone = 'muted') {
@@ -386,6 +414,7 @@ function renderStandardSelects() {
   }
 
   renderStandardDocument(getActiveStandardProfile());
+  updateStatusBar();
 }
 
 function createStandardDocument(profile, stats) {
@@ -879,6 +908,7 @@ function renderDesignStandardSelects() {
   renderAdrPackPreview();
   renderDiagramPackPreview();
   renderRequirementsPreview();
+  updateStatusBar();
 }
 
 async function readProjectFilesForDesign(inputId) {
@@ -2141,6 +2171,7 @@ function showFileContent(filename) {
   const escaped = escapeHtml(code);
   container.innerHTML = `<pre><code class="language-${lang}">${escaped}</code></pre>`;
   Prism.highlightAll();
+  updateStatusBar();
 }
 
 function getFileIcon(filename) {
@@ -2328,6 +2359,7 @@ function bindAutoSaveEvents() {
     if (!element) return;
     const eventName = element.type === 'checkbox' || element.tagName === 'SELECT' ? 'change' : 'input';
     element.addEventListener(eventName, persistWorkspace);
+    element.addEventListener(eventName, updateStatusBar);
     if (id.startsWith('llm')) {
       element.addEventListener(eventName, syncLlmStatus);
     }
