@@ -38,6 +38,18 @@ function sanitizeDbProvider(value) {
   return valid.includes(value) ? value : 'InMemory';
 }
 
+function sanitizeStringArray(value, fallback = [], maxItems = 20) {
+  if (!Array.isArray(value)) {
+    return fallback.slice(0, maxItems);
+  }
+  const cleaned = value
+    .map(item => String(item || '').trim())
+    .filter(Boolean)
+    .slice(0, maxItems);
+
+  return cleaned.length ? cleaned : fallback.slice(0, maxItems);
+}
+
 function sanitizeModelOutput(baseStandard, modelPayload) {
   const safe = modelPayload || {};
   const routePrefix = String(safe.routePrefix || baseStandard.routePrefix || 'api').replace(/^\/+|\/+$/g, '');
@@ -63,6 +75,189 @@ function sanitizeModelOutput(baseStandard, modelPayload) {
     routePrefix: routePrefix || 'api',
     document: String(safe.document || baseStandard.document || '').trim()
   };
+}
+
+function sanitizeDesignStandardOutput(requestedName, modelPayload) {
+  const safe = modelPayload || {};
+  const fallbackSections = [
+    'Purpose and Scope',
+    'System Context',
+    'Architecture Decisions',
+    'Component Breakdown',
+    'Data Design',
+    'API Design',
+    'Security and Compliance',
+    'Observability',
+    'Risks and Open Questions'
+  ];
+
+  const fallbackTemplate = [
+    '# {{projectName}} Design Document',
+    '',
+    '## 1. Purpose and Scope',
+    '- Goal:',
+    '- Non-goals:',
+    '',
+    '## 2. System Context',
+    '- Actors:',
+    '- External systems:',
+    '',
+    '## 3. Architecture Decisions',
+    '- Decision:',
+    '- Rationale:',
+    '',
+    '## 4. Component Breakdown',
+    '- Components:',
+    '- Responsibilities:',
+    '',
+    '## 5. Data Design',
+    '- Core entities:',
+    '- Storage strategy:',
+    '',
+    '## 6. API Design',
+    '- Endpoints:',
+    '- Contracts:',
+    '',
+    '## 7. Security and Compliance',
+    '- AuthN/AuthZ:',
+    '- Sensitive data handling:',
+    '',
+    '## 8. Observability',
+    '- Logs:',
+    '- Metrics:',
+    '- Traces:',
+    '',
+    '## 9. Risks and Open Questions',
+    '- Risks:',
+    '- Open questions:'
+  ].join('\n');
+
+  const name = String(safe.name || requestedName || 'Design Standard').trim() || 'Design Standard';
+  const audience = String(safe.audience || 'Backend Team').trim() || 'Backend Team';
+  const documentLanguage = String(safe.documentLanguage || 'tr-TR').trim() || 'tr-TR';
+  const architectureStyle = String(safe.architectureStyle || 'Layered').trim() || 'Layered';
+  const apiStyle = String(safe.apiStyle || 'REST').trim() || 'REST';
+  const template = String(safe.template || fallbackTemplate).trim() || fallbackTemplate;
+
+  return {
+    name,
+    audience,
+    documentLanguage,
+    architectureStyle,
+    apiStyle,
+    sectionOrder: sanitizeStringArray(safe.sectionOrder, fallbackSections, 24),
+    namingConventions: sanitizeStringArray(safe.namingConventions, ['PascalCase for types', 'camelCase for locals'], 24),
+    folderConventions: sanitizeStringArray(safe.folderConventions, ['Controllers', 'Services', 'Models', 'Data'], 24),
+    diagramTypes: sanitizeStringArray(safe.diagramTypes, ['Context Diagram', 'Component Diagram', 'Sequence Diagram'], 24),
+    qualityGates: sanitizeStringArray(
+      safe.qualityGates,
+      ['Security review', 'Error handling policy', 'Observability checklist', 'Test strategy coverage'],
+      24
+    ),
+    template: template.slice(0, 20000)
+  };
+}
+
+function sanitizeMermaidCode(value, fallback) {
+  const raw = String(value || '').trim();
+  if (!raw) return fallback;
+
+  const fenced = raw.match(/```mermaid\s*([\s\S]*?)```/i);
+  const content = fenced ? fenced[1].trim() : raw;
+  if (!content) return fallback;
+
+  return content.slice(0, 20000);
+}
+
+function sanitizeDiagramPackOutput(modelPayload) {
+  const safe = modelPayload || {};
+  const fallbackContext = [
+    'flowchart LR',
+    '  User[User] --> Api[API]',
+    '  Api --> Db[(Database)]'
+  ].join('\n');
+  const fallbackContainer = [
+    'flowchart TB',
+    '  subgraph Service',
+    '    C1[Controllers]',
+    '    C2[Services]',
+    '    C3[Data Access]',
+    '  end',
+    '  C1 --> C2 --> C3'
+  ].join('\n');
+  const fallbackSequence = [
+    'sequenceDiagram',
+    '  actor Client',
+    '  participant API',
+    '  participant DB',
+    '  Client->>API: Request',
+    '  API->>DB: Query',
+    '  DB-->>API: Data',
+    '  API-->>Client: Response'
+  ].join('\n');
+
+  return {
+    contextDiagram: sanitizeMermaidCode(safe.contextDiagram, fallbackContext),
+    containerDiagram: sanitizeMermaidCode(safe.containerDiagram, fallbackContainer),
+    sequenceDiagram: sanitizeMermaidCode(safe.sequenceDiagram, fallbackSequence)
+  };
+}
+
+function buildAdrMarkdown(projectName, adr) {
+  const status = String(adr.status || 'Proposed').trim() || 'Proposed';
+  const title = String(adr.title || 'Untitled Decision').trim() || 'Untitled Decision';
+  const context = String(adr.context || '').trim() || '-';
+  const decision = String(adr.decision || '').trim() || '-';
+  const consequences = String(adr.consequences || '').trim() || '-';
+  const fileName = String(adr.fileName || '').trim();
+  const finalFileName = fileName || `${projectName.toLowerCase()}-decision.md`;
+
+  return {
+    fileName: finalFileName,
+    title,
+    status,
+    content: [
+      `# ${title}`,
+      '',
+      `- Status: ${status}`,
+      `- Date: ${new Date().toISOString().slice(0, 10)}`,
+      '',
+      '## Context',
+      context,
+      '',
+      '## Decision',
+      decision,
+      '',
+      '## Consequences',
+      consequences
+    ].join('\n')
+  };
+}
+
+function sanitizeAdrPackOutput(projectName, modelPayload, adrCount) {
+  const safe = modelPayload || {};
+  const requestedCount = Math.max(1, Math.min(10, parseInt(adrCount, 10) || 3));
+  const adrs = Array.isArray(safe.adrs) ? safe.adrs : [];
+  const sliced = adrs.slice(0, requestedCount);
+
+  const normalized = sliced
+    .map(adr => buildAdrMarkdown(projectName, adr))
+    .filter(adr => adr.content && adr.title);
+
+  if (normalized.length) {
+    return normalized;
+  }
+
+  return [
+    buildAdrMarkdown(projectName, {
+      fileName: 'adr-0001-architecture-baseline.md',
+      title: 'Architecture Baseline',
+      status: 'Proposed',
+      context: 'Initial architecture baseline is required.',
+      decision: 'Adopt a layered service architecture with clear API-service-data boundaries.',
+      consequences: 'Improves maintainability, but requires strict boundary enforcement.'
+    })
+  ];
 }
 
 function extractJsonPayload(content) {
@@ -97,7 +292,21 @@ function extractJsonPayload(content) {
   }
 }
 
-function buildMessages(standard) {
+function extractMarkdownPayload(content) {
+  if (!content || typeof content !== 'string') {
+    return '';
+  }
+
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  const fenced = trimmed.match(/^```(?:md|markdown)?\s*([\s\S]*?)```$/i);
+  return fenced ? fenced[1].trim() : trimmed;
+}
+
+function buildEnhanceStandardMessages(standard) {
   return [
     {
       role: 'system',
@@ -126,6 +335,182 @@ function buildMessages(standard) {
   ];
 }
 
+function buildDesignStandardMessages(sampleProject, requestedName) {
+  return [
+    {
+      role: 'system',
+      content: 'You are a software design standards assistant. Return ONLY valid JSON.'
+    },
+    {
+      role: 'user',
+      content: [
+        'Create a reusable design-document standard based on this sample project summary.',
+        'Keep it practical and suitable for backend .NET teams.',
+        'Do not invent random data; infer from sample and fill missing points with safe defaults.',
+        'Output JSON with EXACT keys and value types:',
+        'name:string, audience:string, documentLanguage:string, architectureStyle:string, apiStyle:string,',
+        'sectionOrder:string[], namingConventions:string[], folderConventions:string[], diagramTypes:string[], qualityGates:string[], template:string',
+        `Preferred standard name: ${String(requestedName || '').trim() || 'Design Standard'}`,
+        '',
+        JSON.stringify(
+          {
+            sampleProject
+          },
+          null,
+          2
+        )
+      ].join('\n')
+    }
+  ];
+}
+
+function buildDesignDocumentMessages(targetProject, designStandard, preferredTitle) {
+  return [
+    {
+      role: 'system',
+      content: 'You are a senior software architect. Return ONLY markdown.'
+    },
+    {
+      role: 'user',
+      content: [
+        'Write a detailed but concise software design document in markdown.',
+        'Use the provided design standard exactly, especially section order and writing conventions.',
+        'If some facts are missing, write explicit assumptions under a separate "Assumptions" section.',
+        `Preferred title: ${String(preferredTitle || '').trim() || `${targetProject?.projectName || 'Project'} Design Document`}`,
+        '',
+        'Design standard:',
+        JSON.stringify(designStandard, null, 2),
+        '',
+        'Target project summary:',
+        JSON.stringify(targetProject, null, 2)
+      ].join('\n')
+    }
+  ];
+}
+
+function buildConformanceReportMessages(targetProject, designStandard) {
+  return [
+    {
+      role: 'system',
+      content: 'You are a software architecture reviewer. Return ONLY markdown.'
+    },
+    {
+      role: 'user',
+      content: [
+        'Evaluate project conformance to the given design standard.',
+        'Use a practical score table from 0 to 100 for each category.',
+        'Output markdown sections:',
+        '1) Executive Summary',
+        '2) Score Table',
+        '3) Findings by Category',
+        '4) Priority Actions (Top 10)',
+        '5) Risks if ignored',
+        '',
+        'Design standard:',
+        JSON.stringify(designStandard, null, 2),
+        '',
+        'Target project summary:',
+        JSON.stringify(targetProject, null, 2)
+      ].join('\n')
+    }
+  ];
+}
+
+function buildAdrPackMessages(targetProject, designStandard, adrCount) {
+  return [
+    {
+      role: 'system',
+      content: 'You are a software architect. Return ONLY valid JSON.'
+    },
+    {
+      role: 'user',
+      content: [
+        'Create architecture decision records for this project.',
+        `Generate exactly ${adrCount} ADR items.`,
+        'Output JSON with EXACT keys:',
+        'adrs: [{fileName, title, status, context, decision, consequences}]',
+        'Use concise and actionable decisions.',
+        '',
+        'Design standard:',
+        JSON.stringify(designStandard, null, 2),
+        '',
+        'Target project summary:',
+        JSON.stringify(targetProject, null, 2)
+      ].join('\n')
+    }
+  ];
+}
+
+function buildDiagramPackMessages(targetProject, designStandard) {
+  return [
+    {
+      role: 'system',
+      content: 'You are a software architect. Return ONLY valid JSON.'
+    },
+    {
+      role: 'user',
+      content: [
+        'Generate Mermaid diagrams for this project and standard.',
+        'Output JSON with EXACT keys:',
+        'contextDiagram, containerDiagram, sequenceDiagram',
+        'Values must be plain mermaid code (without markdown fences).',
+        '',
+        'Design standard:',
+        JSON.stringify(designStandard, null, 2),
+        '',
+        'Target project summary:',
+        JSON.stringify(targetProject, null, 2)
+      ].join('\n')
+    }
+  ];
+}
+
+async function executeChatCompletion(llmConfig, requestBody) {
+  let response;
+  try {
+    response = await fetch(`${llmConfig.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${llmConfig.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+  } catch (error) {
+    throw new Error(`LLM request failed: ${error.message}`);
+  }
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    const message = `LLM request returned ${response.status}`;
+    const error = new Error(message);
+    error.detail = errorBody.slice(0, 500);
+    throw error;
+  }
+
+  return response.json();
+}
+
+function ensureLlmConfig(llmConfig, res) {
+  if (!llmConfig.apiKey) {
+    res.status(400).json({
+      success: false,
+      message: 'LLM token missing. Set GROQ_API_KEY on server or send llmConfig.apiKey.'
+    });
+    return false;
+  }
+
+  if (!isValidHttpUrl(llmConfig.baseUrl)) {
+    res.status(400).json({
+      success: false,
+      message: 'llmConfig.baseUrl is invalid.'
+    });
+    return false;
+  }
+
+  return true;
+}
+
 router.get('/status', (req, res) => {
   const config = resolveLlmConfig(null);
   return res.json({
@@ -140,19 +525,8 @@ router.get('/status', (req, res) => {
 
 router.post('/enhance-standard', async (req, res) => {
   const llmConfig = resolveLlmConfig(req.body?.llmConfig);
-
-  if (!llmConfig.apiKey) {
-    return res.status(400).json({
-      success: false,
-      message: 'LLM token missing. Set GROQ_API_KEY on server or send llmConfig.apiKey.'
-    });
-  }
-
-  if (!isValidHttpUrl(llmConfig.baseUrl)) {
-    return res.status(400).json({
-      success: false,
-      message: 'llmConfig.baseUrl is invalid.'
-    });
+  if (!ensureLlmConfig(llmConfig, res)) {
+    return undefined;
   }
 
   const standard = req.body?.standard;
@@ -166,36 +540,20 @@ router.post('/enhance-standard', async (req, res) => {
   const requestBody = {
     model: llmConfig.model,
     temperature: 0.2,
-    messages: buildMessages(standard)
+    messages: buildEnhanceStandardMessages(standard)
   };
 
-  let response;
+  let result;
   try {
-    response = await fetch(`${llmConfig.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${llmConfig.apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
-    });
+    result = await executeChatCompletion(llmConfig, requestBody);
   } catch (error) {
     return res.status(502).json({
       success: false,
-      message: `LLM request failed: ${error.message}`
+      message: error.message,
+      detail: error.detail || ''
     });
   }
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    return res.status(502).json({
-      success: false,
-      message: `LLM request returned ${response.status}`,
-      detail: errorBody.slice(0, 500)
-    });
-  }
-
-  const result = await response.json();
   const content = result?.choices?.[0]?.message?.content || '';
   const parsed = extractJsonPayload(content);
 
@@ -210,6 +568,300 @@ router.post('/enhance-standard', async (req, res) => {
   return res.json({
     success: true,
     standard: enhanced,
+    meta: {
+      provider: 'groq-openai-compatible',
+      model: requestBody.model,
+      baseUrl: llmConfig.baseUrl
+    }
+  });
+});
+
+router.post('/derive-design-standard', async (req, res) => {
+  const llmConfig = resolveLlmConfig(req.body?.llmConfig);
+  if (!ensureLlmConfig(llmConfig, res)) {
+    return undefined;
+  }
+
+  const sampleProject = req.body?.sampleProject;
+  if (!sampleProject || typeof sampleProject !== 'object') {
+    return res.status(400).json({
+      success: false,
+      message: 'sampleProject payload is required.'
+    });
+  }
+
+  const requestedName = String(req.body?.name || '').trim() || 'Design Standard';
+  const requestBody = {
+    model: llmConfig.model,
+    temperature: 0.2,
+    messages: buildDesignStandardMessages(sampleProject, requestedName)
+  };
+
+  let result;
+  try {
+    result = await executeChatCompletion(llmConfig, requestBody);
+  } catch (error) {
+    return res.status(502).json({
+      success: false,
+      message: error.message,
+      detail: error.detail || ''
+    });
+  }
+
+  const content = result?.choices?.[0]?.message?.content || '';
+  const parsed = extractJsonPayload(content);
+  if (!parsed) {
+    return res.status(502).json({
+      success: false,
+      message: 'LLM response for design standard is not valid JSON.'
+    });
+  }
+
+  const designStandard = sanitizeDesignStandardOutput(requestedName, parsed);
+  return res.json({
+    success: true,
+    designStandard,
+    meta: {
+      provider: 'groq-openai-compatible',
+      model: requestBody.model,
+      baseUrl: llmConfig.baseUrl
+    }
+  });
+});
+
+router.post('/generate-design-document', async (req, res) => {
+  const llmConfig = resolveLlmConfig(req.body?.llmConfig);
+  if (!ensureLlmConfig(llmConfig, res)) {
+    return undefined;
+  }
+
+  const targetProject = req.body?.targetProject;
+  const designStandard = req.body?.designStandard;
+
+  if (!targetProject || typeof targetProject !== 'object') {
+    return res.status(400).json({
+      success: false,
+      message: 'targetProject payload is required.'
+    });
+  }
+
+  if (!designStandard || typeof designStandard !== 'object') {
+    return res.status(400).json({
+      success: false,
+      message: 'designStandard payload is required.'
+    });
+  }
+
+  const preferredTitle = String(req.body?.title || '').trim();
+  const requestBody = {
+    model: llmConfig.model,
+    temperature: 0.35,
+    messages: buildDesignDocumentMessages(targetProject, designStandard, preferredTitle)
+  };
+
+  let result;
+  try {
+    result = await executeChatCompletion(llmConfig, requestBody);
+  } catch (error) {
+    return res.status(502).json({
+      success: false,
+      message: error.message,
+      detail: error.detail || ''
+    });
+  }
+
+  const content = result?.choices?.[0]?.message?.content || '';
+  const document = extractMarkdownPayload(content);
+  if (!document) {
+    return res.status(502).json({
+      success: false,
+      message: 'LLM response did not include a design document.'
+    });
+  }
+
+  return res.json({
+    success: true,
+    document,
+    title: preferredTitle || `${targetProject.projectName || 'Project'} Design Document`,
+    meta: {
+      provider: 'groq-openai-compatible',
+      model: requestBody.model,
+      baseUrl: llmConfig.baseUrl
+    }
+  });
+});
+
+router.post('/generate-conformance-report', async (req, res) => {
+  const llmConfig = resolveLlmConfig(req.body?.llmConfig);
+  if (!ensureLlmConfig(llmConfig, res)) {
+    return undefined;
+  }
+
+  const targetProject = req.body?.targetProject;
+  const designStandard = req.body?.designStandard;
+  if (!targetProject || typeof targetProject !== 'object') {
+    return res.status(400).json({
+      success: false,
+      message: 'targetProject payload is required.'
+    });
+  }
+  if (!designStandard || typeof designStandard !== 'object') {
+    return res.status(400).json({
+      success: false,
+      message: 'designStandard payload is required.'
+    });
+  }
+
+  const requestBody = {
+    model: llmConfig.model,
+    temperature: 0.2,
+    messages: buildConformanceReportMessages(targetProject, designStandard)
+  };
+
+  let result;
+  try {
+    result = await executeChatCompletion(llmConfig, requestBody);
+  } catch (error) {
+    return res.status(502).json({
+      success: false,
+      message: error.message,
+      detail: error.detail || ''
+    });
+  }
+
+  const content = result?.choices?.[0]?.message?.content || '';
+  const report = extractMarkdownPayload(content);
+  if (!report) {
+    return res.status(502).json({
+      success: false,
+      message: 'LLM response did not include a conformance report.'
+    });
+  }
+
+  return res.json({
+    success: true,
+    report,
+    meta: {
+      provider: 'groq-openai-compatible',
+      model: requestBody.model,
+      baseUrl: llmConfig.baseUrl
+    }
+  });
+});
+
+router.post('/generate-adr-pack', async (req, res) => {
+  const llmConfig = resolveLlmConfig(req.body?.llmConfig);
+  if (!ensureLlmConfig(llmConfig, res)) {
+    return undefined;
+  }
+
+  const targetProject = req.body?.targetProject;
+  const designStandard = req.body?.designStandard;
+  const adrCount = Math.max(1, Math.min(10, parseInt(req.body?.adrCount, 10) || 3));
+  if (!targetProject || typeof targetProject !== 'object') {
+    return res.status(400).json({
+      success: false,
+      message: 'targetProject payload is required.'
+    });
+  }
+  if (!designStandard || typeof designStandard !== 'object') {
+    return res.status(400).json({
+      success: false,
+      message: 'designStandard payload is required.'
+    });
+  }
+
+  const requestBody = {
+    model: llmConfig.model,
+    temperature: 0.25,
+    messages: buildAdrPackMessages(targetProject, designStandard, adrCount)
+  };
+
+  let result;
+  try {
+    result = await executeChatCompletion(llmConfig, requestBody);
+  } catch (error) {
+    return res.status(502).json({
+      success: false,
+      message: error.message,
+      detail: error.detail || ''
+    });
+  }
+
+  const content = result?.choices?.[0]?.message?.content || '';
+  const parsed = extractJsonPayload(content);
+  if (!parsed) {
+    return res.status(502).json({
+      success: false,
+      message: 'LLM response for ADR pack is not valid JSON.'
+    });
+  }
+
+  const projectName = String(targetProject.projectName || 'project').replace(/[^A-Za-z0-9_-]/g, '').toLowerCase() || 'project';
+  const adrs = sanitizeAdrPackOutput(projectName, parsed, adrCount);
+
+  return res.json({
+    success: true,
+    adrs,
+    meta: {
+      provider: 'groq-openai-compatible',
+      model: requestBody.model,
+      baseUrl: llmConfig.baseUrl
+    }
+  });
+});
+
+router.post('/generate-diagram-pack', async (req, res) => {
+  const llmConfig = resolveLlmConfig(req.body?.llmConfig);
+  if (!ensureLlmConfig(llmConfig, res)) {
+    return undefined;
+  }
+
+  const targetProject = req.body?.targetProject;
+  const designStandard = req.body?.designStandard;
+  if (!targetProject || typeof targetProject !== 'object') {
+    return res.status(400).json({
+      success: false,
+      message: 'targetProject payload is required.'
+    });
+  }
+  if (!designStandard || typeof designStandard !== 'object') {
+    return res.status(400).json({
+      success: false,
+      message: 'designStandard payload is required.'
+    });
+  }
+
+  const requestBody = {
+    model: llmConfig.model,
+    temperature: 0.2,
+    messages: buildDiagramPackMessages(targetProject, designStandard)
+  };
+
+  let result;
+  try {
+    result = await executeChatCompletion(llmConfig, requestBody);
+  } catch (error) {
+    return res.status(502).json({
+      success: false,
+      message: error.message,
+      detail: error.detail || ''
+    });
+  }
+
+  const content = result?.choices?.[0]?.message?.content || '';
+  const parsed = extractJsonPayload(content);
+  if (!parsed) {
+    return res.status(502).json({
+      success: false,
+      message: 'LLM response for diagram pack is not valid JSON.'
+    });
+  }
+
+  const diagrams = sanitizeDiagramPackOutput(parsed);
+  return res.json({
+    success: true,
+    diagrams,
     meta: {
       provider: 'groq-openai-compatible',
       model: requestBody.model,

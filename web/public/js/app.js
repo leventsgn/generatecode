@@ -7,10 +7,16 @@ const state = {
   editingTableIndex: -1,
   editingDtoIndex: -1,
   standards: [],
-  selectedStandardId: ''
+  selectedStandardId: '',
+  designStandards: [],
+  selectedDesignStandardId: '',
+  generatedDesignDocument: null,
+  generatedConformanceReport: null,
+  generatedAdrPack: [],
+  generatedDiagramPack: null
 };
 
-const STORAGE_KEY = 'generatecode_workspace_v3';
+const STORAGE_KEY = 'generatecode_workspace_v4';
 
 // ==================== UTIL ====================
 
@@ -54,6 +60,28 @@ function shouldAnalyzeFile(path) {
     lower.endsWith('.sln') ||
     lower.endsWith('.editorconfig') ||
     lower.endsWith('appsettings.json')
+  );
+}
+
+function shouldAnalyzeDesignFile(path) {
+  const lower = normalizePath(path).toLowerCase();
+  const blockedParts = ['/bin/', '/obj/', '/.git/', '/node_modules/', '/dist/', '/out/'];
+  if (blockedParts.some(part => lower.includes(part))) {
+    return false;
+  }
+
+  return (
+    lower.endsWith('.csproj') ||
+    lower.endsWith('.cs') ||
+    lower.endsWith('.sln') ||
+    lower.endsWith('.editorconfig') ||
+    lower.endsWith('.json') ||
+    lower.endsWith('.yaml') ||
+    lower.endsWith('.yml') ||
+    lower.endsWith('.md') ||
+    lower.endsWith('.txt') ||
+    lower.endsWith('.http') ||
+    lower.endsWith('.xml')
   );
 }
 
@@ -125,7 +153,11 @@ function getConfigSnapshot() {
     llmBaseUrl: document.getElementById('llmBaseUrl')?.value || 'https://api.groq.com/openai/v1',
     llmModel: document.getElementById('llmModel')?.value || 'openai/gpt-oss-120b',
     llmApiKey: document.getElementById('llmApiKey')?.value || '',
-    selectedStandardId: state.selectedStandardId || ''
+    selectedStandardId: state.selectedStandardId || '',
+    selectedDesignStandardId: state.selectedDesignStandardId || '',
+    designStandardName: document.getElementById('designStandardNameInput')?.value || '',
+    designDocTitle: document.getElementById('designDocTitleInput')?.value || '',
+    adrCount: document.getElementById('adrCountInput')?.value || '3'
   };
 }
 
@@ -153,7 +185,11 @@ function applyConfigSnapshot(snapshot = {}) {
     llmBaseUrl: 'https://api.groq.com/openai/v1',
     llmModel: 'openai/gpt-oss-120b',
     llmApiKey: '',
-    selectedStandardId: ''
+    selectedStandardId: '',
+    selectedDesignStandardId: '',
+    designStandardName: '',
+    designDocTitle: '',
+    adrCount: '3'
   };
 
   const cfg = { ...defaults, ...snapshot };
@@ -188,7 +224,14 @@ function applyConfigSnapshot(snapshot = {}) {
   if (llmBaseUrlInput) llmBaseUrlInput.value = cfg.llmBaseUrl;
   if (llmModelInput) llmModelInput.value = cfg.llmModel;
   if (llmApiKeyInput) llmApiKeyInput.value = cfg.llmApiKey;
+  const designStandardNameInput = document.getElementById('designStandardNameInput');
+  const designDocTitleInput = document.getElementById('designDocTitleInput');
+  const adrCountInput = document.getElementById('adrCountInput');
+  if (designStandardNameInput) designStandardNameInput.value = cfg.designStandardName;
+  if (designDocTitleInput) designDocTitleInput.value = cfg.designDocTitle;
+  if (adrCountInput) adrCountInput.value = cfg.adrCount;
   state.selectedStandardId = cfg.selectedStandardId || '';
+  state.selectedDesignStandardId = cfg.selectedDesignStandardId || '';
 }
 
 function persistWorkspace() {
@@ -197,14 +240,23 @@ function persistWorkspace() {
     tables: state.tables,
     dtos: state.dtos,
     standards: state.standards,
-    selectedStandardId: state.selectedStandardId
+    selectedStandardId: state.selectedStandardId,
+    designStandards: state.designStandards,
+    selectedDesignStandardId: state.selectedDesignStandardId,
+    generatedDesignDocument: state.generatedDesignDocument,
+    generatedConformanceReport: state.generatedConformanceReport,
+    generatedAdrPack: state.generatedAdrPack,
+    generatedDiagramPack: state.generatedDiagramPack
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
 
 function restoreWorkspace() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      raw = localStorage.getItem('generatecode_workspace_v3');
+    }
     if (!raw) {
       return;
     }
@@ -214,6 +266,12 @@ function restoreWorkspace() {
     state.dtos = Array.isArray(payload.dtos) ? payload.dtos : [];
     state.standards = Array.isArray(payload.standards) ? payload.standards : [];
     state.selectedStandardId = payload.selectedStandardId || payload.config?.selectedStandardId || state.selectedStandardId;
+    state.designStandards = Array.isArray(payload.designStandards) ? payload.designStandards : [];
+    state.selectedDesignStandardId = payload.selectedDesignStandardId || payload.config?.selectedDesignStandardId || '';
+    state.generatedDesignDocument = payload.generatedDesignDocument || null;
+    state.generatedConformanceReport = payload.generatedConformanceReport || null;
+    state.generatedAdrPack = Array.isArray(payload.generatedAdrPack) ? payload.generatedAdrPack : [];
+    state.generatedDiagramPack = payload.generatedDiagramPack || null;
   } catch {
     localStorage.removeItem(STORAGE_KEY);
   }
@@ -548,13 +606,26 @@ function downloadSelectedStandardDocument() {
 }
 
 async function syncLlmStatus() {
-  const button = document.getElementById('enhanceStandardWithLlmBtn');
-  if (!button) return;
+  const buttons = [
+    document.getElementById('enhanceStandardWithLlmBtn'),
+    document.getElementById('deriveDesignStandardBtn'),
+    document.getElementById('generateDesignDocBtn'),
+    document.getElementById('generateConformanceBtn'),
+    document.getElementById('generateAdrPackBtn'),
+    document.getElementById('generateDiagramPackBtn')
+  ].filter(Boolean);
+  if (!buttons.length) return;
+
+  const setButtons = (disabled, title) => {
+    buttons.forEach(button => {
+      button.disabled = disabled;
+      button.title = title;
+    });
+  };
 
   const runtime = getLlmRuntimeConfig();
   if (runtime.apiKey) {
-    button.disabled = false;
-    button.title = `LLM model: ${runtime.model || 'openai/gpt-oss-120b'} (ekran ayari)`;
+    setButtons(false, `LLM model: ${runtime.model || 'openai/gpt-oss-120b'} (ekran ayari)`);
     setLlmConfigHint('Ekran tokeni aktif. LLM cagrilari bu token ile yapilacak.', 'success');
     return;
   }
@@ -568,18 +639,15 @@ async function syncLlmStatus() {
     }
 
     if (!data.configured) {
-      button.disabled = true;
-      button.title = 'LLM token girin veya server env de GROQ_API_KEY tanimlayin.';
+      setButtons(true, 'LLM token girin veya server env de GROQ_API_KEY tanimlayin.');
       setLlmConfigHint('Token girin veya server env icinde GROQ_API_KEY tanimlayin.', 'warning');
       return;
     }
 
-    button.disabled = false;
-    button.title = `LLM model: ${data.model} (server env)`;
+    setButtons(false, `LLM model: ${data.model} (server env)`);
     setLlmConfigHint('Server env tokeni aktif. Istersen ekrandan override edebilirsin.', 'muted');
   } catch {
-    button.disabled = true;
-    button.title = 'LLM durumu okunamadi.';
+    setButtons(true, 'LLM durumu okunamadi.');
     setLlmConfigHint('LLM status okunamadi. URL/token degerlerini kontrol et.', 'danger');
   }
 }
@@ -646,6 +714,685 @@ async function enhanceSelectedStandardWithLlm() {
     button.disabled = false;
     button.innerHTML = original;
   }
+}
+
+function getDesignStandardById(id) {
+  return state.designStandards.find(standard => standard.id === id) || null;
+}
+
+function getActiveDesignStandard() {
+  return getDesignStandardById(state.selectedDesignStandardId);
+}
+
+function renderDesignStandardPreview(standard) {
+  const preview = document.getElementById('designStandardPreview');
+  if (!preview) return;
+
+  if (!standard || !standard.profile) {
+    preview.textContent = 'Henuz tasarim standarti uretilmedi.';
+    return;
+  }
+
+  const profile = standard.profile;
+  const sectionOrder = Array.isArray(profile.sectionOrder) ? profile.sectionOrder : [];
+  const qualityGates = Array.isArray(profile.qualityGates) ? profile.qualityGates : [];
+  const lines = [
+    `# ${profile.name || standard.name}`,
+    '',
+    `- Olusturma tarihi: ${toDisplayDate(standard.createdAt)}`,
+    `- Kaynak proje: ${standard.sourceProject || 'Bilinmiyor'}`,
+    `- Mimari stil: ${profile.architectureStyle || '-'}`,
+    `- API stili: ${profile.apiStyle || '-'}`,
+    `- Dokuman dili: ${profile.documentLanguage || '-'}`,
+    `- Hedef kitle: ${profile.audience || '-'}`,
+    '',
+    '## Bolum Sirasi',
+    ...sectionOrder.map(section => `- ${section}`),
+    '',
+    '## Kalite Kontrol',
+    ...qualityGates.map(item => `- ${item}`),
+    '',
+    '## Template',
+    profile.template || ''
+  ];
+
+  preview.textContent = lines.join('\n');
+}
+
+function renderDesignDocumentPreview(documentState = state.generatedDesignDocument) {
+  const preview = document.getElementById('designDocPreview');
+  if (!preview) return;
+
+  if (!documentState || !documentState.content) {
+    preview.textContent = 'Henuz tasarim dokumani uretilmedi.';
+    return;
+  }
+
+  preview.textContent = documentState.content;
+}
+
+function renderConformancePreview(reportState = state.generatedConformanceReport) {
+  const preview = document.getElementById('conformancePreview');
+  if (!preview) return;
+
+  if (!reportState || !reportState.content) {
+    preview.textContent = 'Henuz uygunluk raporu uretilmedi.';
+    return;
+  }
+
+  preview.textContent = reportState.content;
+}
+
+function renderAdrPackPreview(adrPack = state.generatedAdrPack) {
+  const preview = document.getElementById('adrPackPreview');
+  if (!preview) return;
+
+  if (!Array.isArray(adrPack) || !adrPack.length) {
+    preview.textContent = 'Henuz ADR paketi uretilmedi.';
+    return;
+  }
+
+  const lines = [];
+  adrPack.forEach((adr, index) => {
+    lines.push(`## ${index + 1}. ${adr.title || adr.fileName || 'ADR'}`);
+    lines.push(`- Dosya: ${adr.fileName || '-'}`);
+    lines.push(`- Durum: ${adr.status || '-'}`);
+    lines.push('');
+    lines.push((adr.content || '').slice(0, 1200));
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+  });
+
+  preview.textContent = lines.join('\n').trim();
+}
+
+function renderDiagramPackPreview(diagrams = state.generatedDiagramPack) {
+  const preview = document.getElementById('diagramPackPreview');
+  if (!preview) return;
+
+  if (!diagrams || !diagrams.contextDiagram) {
+    preview.textContent = 'Henuz diyagram paketi uretilmedi.';
+    return;
+  }
+
+  preview.textContent = [
+    '# Context Diagram',
+    '```mermaid',
+    diagrams.contextDiagram || '',
+    '```',
+    '',
+    '# Container Diagram',
+    '```mermaid',
+    diagrams.containerDiagram || '',
+    '```',
+    '',
+    '# Sequence Diagram',
+    '```mermaid',
+    diagrams.sequenceDiagram || '',
+    '```'
+  ].join('\n');
+}
+
+function renderDesignStandardSelects() {
+  const select = document.getElementById('designStandardsListSelect');
+  if (!select) return;
+
+  const defaultOption = '<option value="">Tasarim standarti secilmedi</option>';
+  const options = state.designStandards.map(standard => {
+    const created = toDisplayDate(standard.createdAt);
+    return `<option value="${standard.id}">${escapeHtml(standard.name)} (${escapeHtml(created)})</option>`;
+  }).join('');
+
+  select.innerHTML = defaultOption + options;
+
+  if (state.selectedDesignStandardId && getDesignStandardById(state.selectedDesignStandardId)) {
+    select.value = state.selectedDesignStandardId;
+  } else {
+    state.selectedDesignStandardId = '';
+    select.value = '';
+  }
+
+  renderDesignStandardPreview(getActiveDesignStandard());
+  renderDesignDocumentPreview();
+  renderConformancePreview();
+  renderAdrPackPreview();
+  renderDiagramPackPreview();
+}
+
+async function readProjectFilesForDesign(inputId) {
+  const input = document.getElementById(inputId);
+  const files = Array.from(input?.files || []);
+  if (!files.length) {
+    throw new Error('Lutfen proje klasoru secin.');
+  }
+
+  const analyzable = files.filter(file => shouldAnalyzeDesignFile(file.webkitRelativePath || file.name));
+  if (!analyzable.length) {
+    throw new Error('Analiz icin uygun dosya bulunamadi.');
+  }
+
+  const limited = analyzable.slice(0, 220);
+  return Promise.all(limited.map(async file => ({
+    path: file.webkitRelativePath || file.name,
+    content: (await file.text()).slice(0, 9000)
+  })));
+}
+
+function buildProjectDesignSummary(projectFiles) {
+  const files = projectFiles.map(file => ({
+    path: normalizePath(file.path),
+    pathLower: normalizePath(file.path).toLowerCase(),
+    content: file.content || ''
+  }));
+
+  const projectName = getProjectRootName(files);
+  const extensionCounts = {};
+  const topFolders = {};
+  const controllers = new Set();
+  const services = new Set();
+  const entities = new Set();
+  const packageReferences = new Set();
+  const routeSamples = new Set();
+  const docHeadings = [];
+  const architectureHints = new Set();
+  const keyFiles = [];
+  let targetFramework = 'unknown';
+  let rootNamespace = '';
+
+  files.forEach(file => {
+    const parts = file.path.split('/');
+    const filename = parts[parts.length - 1] || '';
+    const dotIndex = filename.lastIndexOf('.');
+    const ext = dotIndex >= 0 ? filename.slice(dotIndex).toLowerCase() : 'other';
+    const safeExt = ext.length < 12 ? ext : 'other';
+    extensionCounts[safeExt] = (extensionCounts[safeExt] || 0) + 1;
+
+    if (parts.length > 1) {
+      topFolders[parts[0]] = (topFolders[parts[0]] || 0) + 1;
+    }
+
+    if (file.pathLower.endsWith('.csproj')) {
+      const tf = findFirstMatch(file.content, /<TargetFramework>([^<]+)<\/TargetFramework>/i, '');
+      const ns = findFirstMatch(file.content, /<RootNamespace>([^<]+)<\/RootNamespace>/i, '');
+      if (tf) targetFramework = tf;
+      if (ns) rootNamespace = ns;
+
+      const packageRegex = /<PackageReference\s+Include="([^"]+)"/gi;
+      let pkgMatch = packageRegex.exec(file.content);
+      while (pkgMatch) {
+        packageReferences.add(pkgMatch[1]);
+        pkgMatch = packageRegex.exec(file.content);
+      }
+    }
+
+    if (file.pathLower.includes('/controllers/') && file.pathLower.endsWith('.cs')) {
+      const classRegex = /class\s+([A-Za-z0-9_]+Controller)\b/g;
+      let classMatch = classRegex.exec(file.content);
+      while (classMatch) {
+        controllers.add(classMatch[1]);
+        classMatch = classRegex.exec(file.content);
+      }
+
+      const routeRegex = /\[Route\("([^"]+)"\)\]/g;
+      let routeMatch = routeRegex.exec(file.content);
+      while (routeMatch) {
+        routeSamples.add(routeMatch[1]);
+        routeMatch = routeRegex.exec(file.content);
+      }
+    }
+
+    if (file.pathLower.includes('/services/') && file.pathLower.endsWith('.cs')) {
+      const svcRegex = /(interface|class)\s+([A-Za-z0-9_]+Service)\b/g;
+      let svcMatch = svcRegex.exec(file.content);
+      while (svcMatch) {
+        services.add(svcMatch[2]);
+        svcMatch = svcRegex.exec(file.content);
+      }
+    }
+
+    if ((file.pathLower.includes('/models/') || file.pathLower.includes('/entities/')) && file.pathLower.endsWith('.cs')) {
+      const entityRegex = /class\s+([A-Za-z0-9_]+)\b/g;
+      let entityMatch = entityRegex.exec(file.content);
+      while (entityMatch) {
+        entities.add(entityMatch[1]);
+        entityMatch = entityRegex.exec(file.content);
+      }
+    }
+
+    if (file.pathLower.includes('/domain/')) architectureHints.add('Domain folder detected');
+    if (file.pathLower.includes('/application/')) architectureHints.add('Application folder detected');
+    if (file.pathLower.includes('/infrastructure/')) architectureHints.add('Infrastructure folder detected');
+    if (file.pathLower.includes('/shared/')) architectureHints.add('Shared folder detected');
+    if (/UseNpgsql|UseSqlServer|UseMySql|UseInMemoryDatabase/.test(file.content)) architectureHints.add('Database provider usage detected');
+    if (/AddAuthentication|AddAuthorization|UseAuthentication|UseAuthorization/.test(file.content)) architectureHints.add('Auth middleware detected');
+
+    if ((file.pathLower.endsWith('.md') || file.pathLower.endsWith('.txt')) && docHeadings.length < 25) {
+      const headings = (file.content.match(/^#{1,4}\s+.+$/gm) || []).slice(0, 5);
+      headings.forEach(heading => {
+        if (docHeadings.length < 25) {
+          docHeadings.push(`${file.path}: ${heading}`);
+        }
+      });
+    }
+
+    if (keyFiles.length < 30) {
+      keyFiles.push({
+        path: file.path,
+        excerpt: file.content.split('\n').slice(0, 14).join('\n').slice(0, 700)
+      });
+    }
+  });
+
+  const extensionBreakdown = Object.entries(extensionCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([extension, count]) => ({ extension, count }));
+
+  const folderBreakdown = Object.entries(topFolders)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12)
+    .map(([folder, count]) => ({ folder, count }));
+
+  return {
+    projectName,
+    fileCount: files.length,
+    targetFramework,
+    rootNamespace: rootNamespace || projectName.replace(/[^A-Za-z0-9_]/g, ''),
+    extensionBreakdown,
+    folderBreakdown,
+    controllers: Array.from(controllers).slice(0, 40),
+    services: Array.from(services).slice(0, 40),
+    entities: Array.from(entities).slice(0, 60),
+    routeSamples: Array.from(routeSamples).slice(0, 30),
+    packageReferences: Array.from(packageReferences).slice(0, 40),
+    architectureHints: Array.from(architectureHints).slice(0, 20),
+    documentHeadings: docHeadings.slice(0, 30),
+    keyFiles
+  };
+}
+
+async function deriveDesignStandardWithLlm() {
+  const button = document.getElementById('deriveDesignStandardBtn');
+  if (!button) return;
+
+  const original = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>LLM isliyor...';
+
+  try {
+    const sampleFiles = await readProjectFilesForDesign('designSampleUploadInput');
+    const sampleProject = buildProjectDesignSummary(sampleFiles);
+    const requestedName = document.getElementById('designStandardNameInput')?.value?.trim() || '';
+    const llmConfig = getLlmRuntimeConfig();
+
+    const response = await fetch('/api/llm/derive-design-standard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: requestedName || `${sampleProject.projectName} Design Standard`,
+        sampleProject,
+        llmConfig
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Tasarim standarti olusturulamadi.');
+    }
+
+    const standard = {
+      id: `dstd-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name: data.designStandard?.name || requestedName || `${sampleProject.projectName} Design Standard`,
+      sourceProject: sampleProject.projectName,
+      createdAt: new Date().toISOString(),
+      profile: data.designStandard,
+      meta: data.meta || {}
+    };
+
+    state.designStandards.push(standard);
+    state.selectedDesignStandardId = standard.id;
+    renderDesignStandardSelects();
+    persistWorkspace();
+    showToast(`Tasarim standarti olusturuldu: ${standard.name}`);
+  } catch (error) {
+    alert(`Tasarim standarti hatasi: ${error.message}`);
+  } finally {
+    button.disabled = false;
+    button.innerHTML = original;
+  }
+}
+
+function deleteSelectedDesignStandard() {
+  const select = document.getElementById('designStandardsListSelect');
+  const selectedId = select?.value || state.selectedDesignStandardId;
+  if (!selectedId) {
+    alert('Silinecek tasarim standarti secili degil.');
+    return;
+  }
+
+  const standard = getDesignStandardById(selectedId);
+  if (!standard) return;
+  if (!confirm(`"${standard.name}" tasarim standardi silinsin mi?`)) return;
+
+  state.designStandards = state.designStandards.filter(item => item.id !== selectedId);
+  if (state.selectedDesignStandardId === selectedId) {
+    state.selectedDesignStandardId = '';
+  }
+
+  renderDesignStandardSelects();
+  persistWorkspace();
+  showToast('Tasarim standarti silindi.');
+}
+
+function downloadSelectedDesignStandard() {
+  const selectedId = document.getElementById('designStandardsListSelect')?.value || state.selectedDesignStandardId;
+  const standard = getDesignStandardById(selectedId);
+  if (!standard) {
+    alert('Lutfen once bir tasarim standarti secin.');
+    return;
+  }
+
+  const preview = document.getElementById('designStandardPreview');
+  const content = preview?.textContent || '';
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `${standard.name.replace(/[^A-Za-z0-9_-]/g, '_')}.md`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function getSelectedDesignStandardOrAlert() {
+  const selectedId = document.getElementById('designStandardsListSelect')?.value || state.selectedDesignStandardId;
+  const designStandard = getDesignStandardById(selectedId);
+  if (!designStandard || !designStandard.profile) {
+    alert('Lutfen once bir tasarim standarti secin.');
+    return null;
+  }
+
+  return designStandard;
+}
+
+async function generateDesignDocumentWithLlm() {
+  const designStandard = getSelectedDesignStandardOrAlert();
+  if (!designStandard) return;
+
+  const button = document.getElementById('generateDesignDocBtn');
+  if (!button) return;
+
+  const original = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>LLM yaziyor...';
+
+  try {
+    const targetFiles = await readProjectFilesForDesign('designTargetUploadInput');
+    const targetProject = buildProjectDesignSummary(targetFiles);
+    const title = document.getElementById('designDocTitleInput')?.value?.trim() || '';
+    const llmConfig = getLlmRuntimeConfig();
+
+    const response = await fetch('/api/llm/generate-design-document', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        targetProject,
+        designStandard: designStandard.profile,
+        llmConfig
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Tasarim dokumani uretilmedi.');
+    }
+
+    state.generatedDesignDocument = {
+      title: data.title || title || `${targetProject.projectName} Design Document`,
+      content: data.document || '',
+      generatedAt: new Date().toISOString(),
+      sourceProject: targetProject.projectName,
+      standardId: designStandard.id,
+      standardName: designStandard.name,
+      model: data.meta?.model || ''
+    };
+
+    state.selectedDesignStandardId = designStandard.id;
+    renderDesignStandardSelects();
+    persistWorkspace();
+    showToast(`Tasarim dokumani hazir: ${state.generatedDesignDocument.title}`);
+  } catch (error) {
+    alert(`Tasarim dokumani hatasi: ${error.message}`);
+  } finally {
+    button.disabled = false;
+    button.innerHTML = original;
+  }
+}
+
+async function generateConformanceReportWithLlm() {
+  const designStandard = getSelectedDesignStandardOrAlert();
+  if (!designStandard) return;
+
+  const button = document.getElementById('generateConformanceBtn');
+  if (!button) return;
+  const original = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>LLM degerlendiriyor...';
+
+  try {
+    const targetFiles = await readProjectFilesForDesign('designTargetUploadInput');
+    const targetProject = buildProjectDesignSummary(targetFiles);
+    const llmConfig = getLlmRuntimeConfig();
+
+    const response = await fetch('/api/llm/generate-conformance-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        targetProject,
+        designStandard: designStandard.profile,
+        llmConfig
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Uygunluk raporu uretilmedi.');
+    }
+
+    state.generatedConformanceReport = {
+      content: data.report || '',
+      generatedAt: new Date().toISOString(),
+      sourceProject: targetProject.projectName,
+      standardId: designStandard.id,
+      standardName: designStandard.name,
+      model: data.meta?.model || ''
+    };
+    renderConformancePreview();
+    persistWorkspace();
+    showToast('Uygunluk raporu hazirlandi.');
+  } catch (error) {
+    alert(`Uygunluk raporu hatasi: ${error.message}`);
+  } finally {
+    button.disabled = false;
+    button.innerHTML = original;
+  }
+}
+
+async function generateAdrPackWithLlm() {
+  const designStandard = getSelectedDesignStandardOrAlert();
+  if (!designStandard) return;
+
+  const button = document.getElementById('generateAdrPackBtn');
+  if (!button) return;
+  const original = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>LLM ADR uretiyor...';
+
+  try {
+    const targetFiles = await readProjectFilesForDesign('designTargetUploadInput');
+    const targetProject = buildProjectDesignSummary(targetFiles);
+    const llmConfig = getLlmRuntimeConfig();
+    const adrCount = Math.max(1, Math.min(10, parseInt(document.getElementById('adrCountInput')?.value, 10) || 3));
+
+    const response = await fetch('/api/llm/generate-adr-pack', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        targetProject,
+        designStandard: designStandard.profile,
+        adrCount,
+        llmConfig
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'ADR paketi uretilmedi.');
+    }
+
+    state.generatedAdrPack = Array.isArray(data.adrs) ? data.adrs : [];
+    renderAdrPackPreview();
+    persistWorkspace();
+    showToast(`ADR paketi hazirlandi (${state.generatedAdrPack.length} kayit).`);
+  } catch (error) {
+    alert(`ADR paketi hatasi: ${error.message}`);
+  } finally {
+    button.disabled = false;
+    button.innerHTML = original;
+  }
+}
+
+async function generateDiagramPackWithLlm() {
+  const designStandard = getSelectedDesignStandardOrAlert();
+  if (!designStandard) return;
+
+  const button = document.getElementById('generateDiagramPackBtn');
+  if (!button) return;
+  const original = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>LLM diyagram uretiyor...';
+
+  try {
+    const targetFiles = await readProjectFilesForDesign('designTargetUploadInput');
+    const targetProject = buildProjectDesignSummary(targetFiles);
+    const llmConfig = getLlmRuntimeConfig();
+
+    const response = await fetch('/api/llm/generate-diagram-pack', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        targetProject,
+        designStandard: designStandard.profile,
+        llmConfig
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Diyagram paketi uretilmedi.');
+    }
+
+    state.generatedDiagramPack = data.diagrams || null;
+    renderDiagramPackPreview();
+    persistWorkspace();
+    showToast('Mermaid diyagram paketi hazirlandi.');
+  } catch (error) {
+    alert(`Diyagram paketi hatasi: ${error.message}`);
+  } finally {
+    button.disabled = false;
+    button.innerHTML = original;
+  }
+}
+
+function downloadGeneratedDesignDocument() {
+  if (!state.generatedDesignDocument?.content) {
+    alert('Indirilecek tasarim dokumani yok.');
+    return;
+  }
+
+  const safeTitle = (state.generatedDesignDocument.title || 'DesignDocument').replace(/[^A-Za-z0-9_-]/g, '_');
+  const blob = new Blob([state.generatedDesignDocument.content], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `${safeTitle}.md`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadConformanceReport() {
+  if (!state.generatedConformanceReport?.content) {
+    alert('Indirilecek uygunluk raporu yok.');
+    return;
+  }
+
+  const fileBase = (state.generatedConformanceReport.sourceProject || 'project').replace(/[^A-Za-z0-9_-]/g, '_');
+  const blob = new Blob([state.generatedConformanceReport.content], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `${fileBase}_conformance_report.md`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadAdrPack() {
+  if (!Array.isArray(state.generatedAdrPack) || !state.generatedAdrPack.length) {
+    alert('Indirilecek ADR paketi yok.');
+    return;
+  }
+
+  let content = '# ADR Pack\n\n';
+  state.generatedAdrPack.forEach((adr, index) => {
+    content += `## ${index + 1}. ${adr.title || adr.fileName || 'ADR'}\n`;
+    content += `- File: ${adr.fileName || '-'}\n`;
+    content += `- Status: ${adr.status || '-'}\n\n`;
+    content += `${adr.content || ''}\n\n---\n\n`;
+  });
+
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = 'adr_pack.md';
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadDiagramPack() {
+  if (!state.generatedDiagramPack?.contextDiagram) {
+    alert('Indirilecek diyagram paketi yok.');
+    return;
+  }
+
+  const diagrams = state.generatedDiagramPack;
+  const content = [
+    '# Mermaid Diagram Pack',
+    '',
+    '## Context Diagram',
+    '```mermaid',
+    diagrams.contextDiagram || '',
+    '```',
+    '',
+    '## Container Diagram',
+    '```mermaid',
+    diagrams.containerDiagram || '',
+    '```',
+    '',
+    '## Sequence Diagram',
+    '```mermaid',
+    diagrams.sequenceDiagram || '',
+    '```'
+  ].join('\n');
+
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = 'mermaid_diagram_pack.md';
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 // ==================== TABLE MANAGEMENT ====================
@@ -1425,8 +2172,15 @@ function resetWorkspace() {
   state.currentFile = null;
   state.editingTableIndex = -1;
   state.editingDtoIndex = -1;
+  state.generatedDesignDocument = null;
+  state.generatedConformanceReport = null;
+  state.generatedAdrPack = [];
+  state.generatedDiagramPack = null;
 
-  applyConfigSnapshot({ selectedStandardId: state.selectedStandardId });
+  applyConfigSnapshot({
+    selectedStandardId: state.selectedStandardId,
+    selectedDesignStandardId: state.selectedDesignStandardId
+  });
   document.getElementById('tableSearch').value = '';
   document.getElementById('dtoSearch').value = '';
   document.getElementById('dbStatus').innerHTML = '';
@@ -1435,6 +2189,11 @@ function resetWorkspace() {
   renderTables();
   renderDtos();
   renderStandardSelects();
+  renderDesignStandardSelects();
+  renderDesignDocumentPreview();
+  renderConformancePreview();
+  renderAdrPackPreview();
+  renderDiagramPackPreview();
   clearGeneratedView();
   updateStats();
   persistWorkspace();
@@ -1468,7 +2227,7 @@ function bindAutoSaveEvents() {
     'optSwagger', 'optFluentValidation', 'optAutoMapper',
     'optAuthPack', 'optProductionPack', 'optTestGeneration', 'optEfMigrations', 'optPostmanExport',
     'dbProvider', 'dbHost', 'dbPort', 'dbName', 'dbUser', 'dbPassword',
-    'activeStandardSelect',
+    'activeStandardSelect', 'designStandardsListSelect', 'designStandardNameInput', 'designDocTitleInput', 'adrCountInput',
     'llmBaseUrl', 'llmModel', 'llmApiKey'
   ];
 
@@ -1500,6 +2259,18 @@ function bindStandardEvents() {
   const activeSelect = document.getElementById('activeStandardSelect');
   const downloadBtn = document.getElementById('downloadStandardDocBtn');
   const deleteBtn = document.getElementById('deleteStandardBtn');
+  const designStandardsList = document.getElementById('designStandardsListSelect');
+  const deriveDesignStandardBtn = document.getElementById('deriveDesignStandardBtn');
+  const deleteDesignStandardBtn = document.getElementById('deleteDesignStandardBtn');
+  const downloadDesignStandardBtn = document.getElementById('downloadDesignStandardBtn');
+  const generateDesignDocBtn = document.getElementById('generateDesignDocBtn');
+  const downloadDesignDocBtn = document.getElementById('downloadDesignDocBtn');
+  const generateConformanceBtn = document.getElementById('generateConformanceBtn');
+  const downloadConformanceBtn = document.getElementById('downloadConformanceBtn');
+  const generateAdrPackBtn = document.getElementById('generateAdrPackBtn');
+  const downloadAdrPackBtn = document.getElementById('downloadAdrPackBtn');
+  const generateDiagramPackBtn = document.getElementById('generateDiagramPackBtn');
+  const downloadDiagramPackBtn = document.getElementById('downloadDiagramPackBtn');
 
   if (!analyzeBtn || !standardsList || !applyBtn || !enhanceBtn || !activeSelect || !downloadBtn || !deleteBtn) {
     return;
@@ -1527,6 +2298,58 @@ function bindStandardEvents() {
   enhanceBtn.addEventListener('click', enhanceSelectedStandardWithLlm);
   downloadBtn.addEventListener('click', downloadSelectedStandardDocument);
   deleteBtn.addEventListener('click', deleteSelectedStandard);
+
+  if (designStandardsList) {
+    designStandardsList.addEventListener('change', event => {
+      state.selectedDesignStandardId = event.target.value || '';
+      renderDesignStandardPreview(getActiveDesignStandard());
+      persistWorkspace();
+    });
+  }
+
+  if (deriveDesignStandardBtn) {
+    deriveDesignStandardBtn.addEventListener('click', deriveDesignStandardWithLlm);
+  }
+
+  if (deleteDesignStandardBtn) {
+    deleteDesignStandardBtn.addEventListener('click', deleteSelectedDesignStandard);
+  }
+
+  if (downloadDesignStandardBtn) {
+    downloadDesignStandardBtn.addEventListener('click', downloadSelectedDesignStandard);
+  }
+
+  if (generateDesignDocBtn) {
+    generateDesignDocBtn.addEventListener('click', generateDesignDocumentWithLlm);
+  }
+
+  if (downloadDesignDocBtn) {
+    downloadDesignDocBtn.addEventListener('click', downloadGeneratedDesignDocument);
+  }
+
+  if (generateConformanceBtn) {
+    generateConformanceBtn.addEventListener('click', generateConformanceReportWithLlm);
+  }
+
+  if (downloadConformanceBtn) {
+    downloadConformanceBtn.addEventListener('click', downloadConformanceReport);
+  }
+
+  if (generateAdrPackBtn) {
+    generateAdrPackBtn.addEventListener('click', generateAdrPackWithLlm);
+  }
+
+  if (downloadAdrPackBtn) {
+    downloadAdrPackBtn.addEventListener('click', downloadAdrPack);
+  }
+
+  if (generateDiagramPackBtn) {
+    generateDiagramPackBtn.addEventListener('click', generateDiagramPackWithLlm);
+  }
+
+  if (downloadDiagramPackBtn) {
+    downloadDiagramPackBtn.addEventListener('click', downloadDiagramPack);
+  }
 }
 
 function bindSettingsEvents() {
@@ -1562,6 +2385,11 @@ restoreWorkspace();
 renderTables();
 renderDtos();
 renderStandardSelects();
+renderDesignStandardSelects();
+renderDesignDocumentPreview();
+renderConformancePreview();
+renderAdrPackPreview();
+renderDiagramPackPreview();
 clearGeneratedView();
 updateStats();
 bindWorkflowEvents();

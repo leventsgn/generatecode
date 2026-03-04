@@ -216,6 +216,120 @@
 
                 <label class="form-label small">Standart dokumani</label>
                 <pre id="standardDocPreview" class="standard-doc-preview">Henuz standart analizi yapilmadi.</pre>
+
+                <div class="design-doc-shell mt-4 pt-3">
+                  <h6 class="panel-title mb-1">Tasarim Standardi ve Dokuman (LLM)</h6>
+                  <p class="section-subtitle mb-3">Ornek projeden tasarim standardi cikar, sonra secilen standarda gore dokuman yazdir.</p>
+
+                  <div class="settings-group mb-3">
+                    <div class="settings-group-title">1) Ornek Tasarimdan Standart Cikar</div>
+                    <div class="standard-dropzone mb-2">
+                      <label for="designSampleUploadInput" class="form-label small mb-1">Ornek proje klasoru</label>
+                      <input id="designSampleUploadInput" type="file" class="form-control form-control-sm" webkitdirectory directory multiple>
+                      <small class="text-muted d-block mt-2">Kod ve dokuman dosyalari okunur, ozet LLM'e gonderilir.</small>
+                    </div>
+
+                    <div class="row g-2 mb-2">
+                      <div class="col-8">
+                        <label class="form-label small">Tasarim standarti adi</label>
+                        <input type="text" id="designStandardNameInput" class="form-control form-control-sm" placeholder="Orn: CompanyDesignStandard">
+                      </div>
+                      <div class="col-4 d-flex align-items-end">
+                        <button class="btn btn-sm btn-outline-primary w-100" id="deriveDesignStandardBtn">
+                          <i class="bi bi-bezier2 me-1"></i>LLM ile Cikar
+                        </button>
+                      </div>
+                    </div>
+
+                    <label class="form-label small">Kayitli tasarim standartlari</label>
+                    <select id="designStandardsListSelect" class="form-select form-select-sm mb-2">
+                      <option value="">Tasarim standarti secilmedi</option>
+                    </select>
+
+                    <div class="d-flex gap-2 flex-wrap mb-2">
+                      <button class="btn btn-sm btn-outline-light" id="downloadDesignStandardBtn">
+                        <i class="bi bi-file-earmark-arrow-down me-1"></i>Standarti Indir
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" id="deleteDesignStandardBtn">
+                        <i class="bi bi-trash me-1"></i>Standarti Sil
+                      </button>
+                    </div>
+
+                    <label class="form-label small">Tasarim standarti onizleme</label>
+                    <pre id="designStandardPreview" class="standard-doc-preview">Henuz tasarim standarti uretilmedi.</pre>
+                  </div>
+
+                  <div class="settings-group">
+                    <div class="settings-group-title">2) Projeden Tasarim Dokumani Uret</div>
+                    <div class="standard-dropzone mb-2">
+                      <label for="designTargetUploadInput" class="form-label small mb-1">Dokumani yazilacak proje klasoru</label>
+                      <input id="designTargetUploadInput" type="file" class="form-control form-control-sm" webkitdirectory directory multiple>
+                    </div>
+
+                    <div class="row g-2 mb-2">
+                      <div class="col-8">
+                        <label class="form-label small">Dokuman basligi (opsiyonel)</label>
+                        <input type="text" id="designDocTitleInput" class="form-control form-control-sm" placeholder="Orn: Payment API Tasarim Dokumani">
+                      </div>
+                      <div class="col-4 d-flex align-items-end">
+                        <button class="btn btn-sm btn-primary w-100" id="generateDesignDocBtn">
+                          <i class="bi bi-journal-text me-1"></i>LLM ile Yaz
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="d-flex gap-2 flex-wrap mb-2">
+                      <button class="btn btn-sm btn-outline-light" id="downloadDesignDocBtn">
+                        <i class="bi bi-download me-1"></i>Dokumani Indir
+                      </button>
+                    </div>
+
+                    <label class="form-label small">Tasarim dokumani</label>
+                    <pre id="designDocPreview" class="standard-doc-preview">Henuz tasarim dokumani uretilmedi.</pre>
+                  </div>
+
+                  <div class="settings-group mt-3">
+                    <div class="settings-group-title">3) Benzer Cikti Paketleri (LLM)</div>
+                    <p class="section-subtitle mb-2">Piyasadaki araclara benzer sekilde uygunluk raporu, ADR ve Mermaid diyagramlari uret.</p>
+
+                    <div class="row g-2 mb-2">
+                      <div class="col-4">
+                        <label class="form-label small">ADR adedi</label>
+                        <input type="number" id="adrCountInput" class="form-control form-control-sm" value="3" min="1" max="10">
+                      </div>
+                    </div>
+
+                    <div class="d-flex gap-2 flex-wrap mb-2">
+                      <button class="btn btn-sm btn-outline-primary" id="generateConformanceBtn">
+                        <i class="bi bi-clipboard2-check me-1"></i>Uygunluk Raporu
+                      </button>
+                      <button class="btn btn-sm btn-outline-light" id="downloadConformanceBtn">
+                        <i class="bi bi-download me-1"></i>Raporu Indir
+                      </button>
+                    </div>
+                    <pre id="conformancePreview" class="standard-doc-preview mb-3">Henuz uygunluk raporu uretilmedi.</pre>
+
+                    <div class="d-flex gap-2 flex-wrap mb-2">
+                      <button class="btn btn-sm btn-outline-primary" id="generateAdrPackBtn">
+                        <i class="bi bi-journals me-1"></i>ADR Paketi
+                      </button>
+                      <button class="btn btn-sm btn-outline-light" id="downloadAdrPackBtn">
+                        <i class="bi bi-download me-1"></i>ADR Indir
+                      </button>
+                    </div>
+                    <pre id="adrPackPreview" class="standard-doc-preview mb-3">Henuz ADR paketi uretilmedi.</pre>
+
+                    <div class="d-flex gap-2 flex-wrap mb-2">
+                      <button class="btn btn-sm btn-outline-primary" id="generateDiagramPackBtn">
+                        <i class="bi bi-diagram-3 me-1"></i>Mermaid Diyagramlari
+                      </button>
+                      <button class="btn btn-sm btn-outline-light" id="downloadDiagramPackBtn">
+                        <i class="bi bi-download me-1"></i>Diyagramlari Indir
+                      </button>
+                    </div>
+                    <pre id="diagramPackPreview" class="standard-doc-preview">Henuz diyagram paketi uretilmedi.</pre>
+                  </div>
+                </div>
               </div>
 
               <div class="tab-pane fade" id="tabSettings">

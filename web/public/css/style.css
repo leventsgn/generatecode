@@ -357,6 +357,10 @@ body {
   white-space: pre-wrap;
 }
 
+.design-doc-shell {
+  border-top: 1px solid var(--vsc-border);
+}
+
 .table-card,
 .dto-card {
   border: 1px solid var(--vsc-border);
