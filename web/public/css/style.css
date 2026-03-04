@@ -150,6 +150,15 @@ body {
   align-items: stretch;
 }
 
+.workbench-layout.config-collapsed > [class*="col-"]:first-child {
+  display: none;
+}
+
+.workbench-layout.config-collapsed > [class*="col-"]:last-child {
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
 .page-shell .row.g-3 > [class*="col-"] {
   display: flex;
   min-height: 0;
@@ -494,6 +503,42 @@ body {
 
 .status-spacer {
   flex: 1;
+}
+
+body.zen-mode {
+  padding-bottom: 0;
+}
+
+body.zen-mode .app-header,
+body.zen-mode .quick-toolbar,
+body.zen-mode .status-bar {
+  display: none !important;
+}
+
+body.zen-mode .page-shell {
+  min-height: 100vh;
+  padding: 0;
+}
+
+body.zen-mode .workbench-layout {
+  margin: 0;
+}
+
+body.zen-mode .workbench-layout > [class*="col-"]:first-child {
+  display: none;
+}
+
+body.zen-mode .workbench-layout > [class*="col-"]:last-child {
+  flex: 0 0 100%;
+  max-width: 100%;
+  padding: 0;
+}
+
+body.zen-mode .result-panel {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
 }
 
 .btn-generate {

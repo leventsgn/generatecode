@@ -34,6 +34,12 @@
       <button class="btn btn-sm btn-outline-danger" onclick="resetWorkspace()">
         <i class="bi bi-arrow-counterclockwise me-1"></i>Calisma Alanini Sifirla
       </button>
+      <button class="btn btn-sm btn-outline-dark" id="toggleConfigPaneBtn" title="Ctrl/Cmd + B">
+        <i class="bi bi-layout-sidebar-inset me-1"></i>Sol Panel
+      </button>
+      <button class="btn btn-sm btn-outline-dark" id="toggleZenModeBtn" title="Ctrl + Alt + Z">
+        <i class="bi bi-arrows-fullscreen me-1"></i>Zen
+      </button>
       <span class="stats-chip"><i class="bi bi-table"></i>Tablo: <strong id="statTables">0</strong></span>
       <span class="stats-chip"><i class="bi bi-collection"></i>DTO: <strong id="statDtos">0</strong></span>
       <span class="stats-chip"><i class="bi bi-file-earmark-code"></i>Dosya: <strong id="statFiles">0</strong></span>
@@ -533,6 +539,7 @@
     <span id="statusActiveTab">Tab: Tablolar</span>
     <span id="statusProjectType">Tip: Web API</span>
     <span id="statusActiveStandard">Standart: Yok</span>
+    <span id="statusLayout">Mod: Normal</span>
     <span class="status-spacer"></span>
     <span id="statusCurrentFile">Dosya: -</span>
     <span id="statusGeneratedCount">0 dosya</span>

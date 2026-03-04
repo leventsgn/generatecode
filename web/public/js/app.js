@@ -14,7 +14,9 @@ const state = {
   generatedConformanceReport: null,
   generatedAdrPack: [],
   generatedDiagramPack: null,
-  generatedRequirementsAnalysis: null
+  generatedRequirementsAnalysis: null,
+  isConfigCollapsed: false,
+  isZenMode: false
 };
 
 const STORAGE_KEY = 'generatecode_workspace_v4';
@@ -159,7 +161,9 @@ function getConfigSnapshot() {
     designStandardName: document.getElementById('designStandardNameInput')?.value || '',
     designDocTitle: document.getElementById('designDocTitleInput')?.value || '',
     adrCount: document.getElementById('adrCountInput')?.value || '3',
-    requirementsContext: document.getElementById('requirementsContextInput')?.value || ''
+    requirementsContext: document.getElementById('requirementsContextInput')?.value || '',
+    isConfigCollapsed: state.isConfigCollapsed,
+    isZenMode: state.isZenMode
   };
 }
 
@@ -192,7 +196,9 @@ function applyConfigSnapshot(snapshot = {}) {
     designStandardName: '',
     designDocTitle: '',
     adrCount: '3',
-    requirementsContext: ''
+    requirementsContext: '',
+    isConfigCollapsed: false,
+    isZenMode: false
   };
 
   const cfg = { ...defaults, ...snapshot };
@@ -237,6 +243,9 @@ function applyConfigSnapshot(snapshot = {}) {
   if (requirementsContextInput) requirementsContextInput.value = cfg.requirementsContext;
   state.selectedStandardId = cfg.selectedStandardId || '';
   state.selectedDesignStandardId = cfg.selectedDesignStandardId || '';
+  state.isConfigCollapsed = Boolean(cfg.isConfigCollapsed);
+  state.isZenMode = Boolean(cfg.isZenMode);
+  applyLayoutState();
 }
 
 function persistWorkspace() {
@@ -318,18 +327,65 @@ function updateStatusBar() {
   const activeStandard = getActiveStandardProfile();
   const generatedFileCount = Object.keys(state.generatedFiles).length;
   const currentFileText = state.currentFile || '-';
+  const layoutText = state.isZenMode ? 'Zen' : state.isConfigCollapsed ? 'Kod Odakli' : 'Normal';
 
   const statusActiveTab = document.getElementById('statusActiveTab');
   const statusProjectType = document.getElementById('statusProjectType');
   const statusActiveStandard = document.getElementById('statusActiveStandard');
+  const statusLayout = document.getElementById('statusLayout');
   const statusCurrentFile = document.getElementById('statusCurrentFile');
   const statusGeneratedCount = document.getElementById('statusGeneratedCount');
 
   if (statusActiveTab) statusActiveTab.textContent = `Tab: ${activeTabText}`;
   if (statusProjectType) statusProjectType.textContent = `Tip: ${projectTypeText}`;
   if (statusActiveStandard) statusActiveStandard.textContent = `Standart: ${activeStandard?.name || 'Yok'}`;
+  if (statusLayout) statusLayout.textContent = `Mod: ${layoutText}`;
   if (statusCurrentFile) statusCurrentFile.textContent = `Dosya: ${currentFileText}`;
   if (statusGeneratedCount) statusGeneratedCount.textContent = `${generatedFileCount} dosya`;
+}
+
+function applyLayoutState() {
+  const workbench = document.querySelector('.workbench-layout');
+  if (workbench) {
+    workbench.classList.toggle('config-collapsed', state.isConfigCollapsed && !state.isZenMode);
+  }
+  document.body.classList.toggle('zen-mode', state.isZenMode);
+  updateLayoutControls();
+  updateStatusBar();
+}
+
+function updateLayoutControls() {
+  const configBtn = document.getElementById('toggleConfigPaneBtn');
+  const zenBtn = document.getElementById('toggleZenModeBtn');
+
+  if (configBtn) {
+    const collapsed = state.isConfigCollapsed || state.isZenMode;
+    configBtn.innerHTML = collapsed
+      ? '<i class="bi bi-layout-sidebar me-1"></i>Sol Paneli Ac'
+      : '<i class="bi bi-layout-sidebar-inset me-1"></i>Sol Panel';
+    configBtn.title = 'Ctrl/Cmd + B';
+    configBtn.disabled = state.isZenMode;
+  }
+
+  if (zenBtn) {
+    zenBtn.innerHTML = state.isZenMode
+      ? '<i class="bi bi-fullscreen-exit me-1"></i>Zen Cik'
+      : '<i class="bi bi-arrows-fullscreen me-1"></i>Zen';
+    zenBtn.title = 'Ctrl + Alt + Z';
+  }
+}
+
+function toggleConfigPane() {
+  if (state.isZenMode) return;
+  state.isConfigCollapsed = !state.isConfigCollapsed;
+  applyLayoutState();
+  persistWorkspace();
+}
+
+function toggleZenMode(forceValue = null) {
+  state.isZenMode = typeof forceValue === 'boolean' ? forceValue : !state.isZenMode;
+  applyLayoutState();
+  persistWorkspace();
 }
 
 function openConfigTab(tabTarget) {
@@ -2300,7 +2356,9 @@ function resetWorkspace() {
 
   applyConfigSnapshot({
     selectedStandardId: state.selectedStandardId,
-    selectedDesignStandardId: state.selectedDesignStandardId
+    selectedDesignStandardId: state.selectedDesignStandardId,
+    isConfigCollapsed: state.isConfigCollapsed,
+    isZenMode: state.isZenMode
   });
   document.getElementById('tableSearch').value = '';
   document.getElementById('dtoSearch').value = '';
@@ -2368,6 +2426,28 @@ function bindAutoSaveEvents() {
 
 function bindShortcuts() {
   document.addEventListener('keydown', event => {
+    const key = String(event.key || '').toLowerCase();
+    const isMacMeta = event.metaKey;
+    const isCtrl = event.ctrlKey || isMacMeta;
+
+    if (event.key === 'Escape' && state.isZenMode) {
+      event.preventDefault();
+      toggleZenMode(false);
+      return;
+    }
+
+    if (isCtrl && !event.shiftKey && !event.altKey && key === 'b') {
+      event.preventDefault();
+      toggleConfigPane();
+      return;
+    }
+
+    if ((event.ctrlKey || isMacMeta) && event.altKey && key === 'z') {
+      event.preventDefault();
+      toggleZenMode();
+      return;
+    }
+
     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
       event.preventDefault();
       generateCode();
@@ -2507,6 +2587,21 @@ function bindSettingsEvents() {
   }
 }
 
+function bindLayoutEvents() {
+  const toggleConfigPaneBtn = document.getElementById('toggleConfigPaneBtn');
+  const toggleZenModeBtn = document.getElementById('toggleZenModeBtn');
+
+  if (toggleConfigPaneBtn) {
+    toggleConfigPaneBtn.addEventListener('click', toggleConfigPane);
+  }
+
+  if (toggleZenModeBtn) {
+    toggleZenModeBtn.addEventListener('click', () => toggleZenMode());
+  }
+
+  updateLayoutControls();
+}
+
 document.getElementById('dbProvider').addEventListener('change', function onProviderChange() {
   const portMap = { postgresql: 5432, mssql: 1433, mysql: 3306 };
   document.getElementById('dbPort').value = portMap[this.value] || 5432;
@@ -2531,6 +2626,7 @@ bindWorkflowEvents();
 bindFilterEvents();
 bindAutoSaveEvents();
 bindShortcuts();
+bindLayoutEvents();
 bindStandardEvents();
 bindSettingsEvents();
 syncLlmStatus();
