@@ -1,0 +1,42 @@
+{
+  "projectName": "PetStoreApi",
+  "rootNamespace": "PetStoreApi",
+  "databaseProvider": "InMemory",
+  "entities": [
+    {
+      "name": "Pet",
+      "generateCrud": true,
+      "properties": [
+        { "name": "Id", "type": "int", "isKey": true },
+        { "name": "Name", "type": "string", "isRequired": true, "maxLength": 100 },
+        { "name": "Species", "type": "string", "isRequired": true, "maxLength": 50 },
+        { "name": "Breed", "type": "string", "maxLength": 100 },
+        { "name": "Age", "type": "int" },
+        { "name": "IsAdopted", "type": "bool" }
+      ]
+    },
+    {
+      "name": "Owner",
+      "generateCrud": true,
+      "properties": [
+        { "name": "Id", "type": "int", "isKey": true },
+        { "name": "FirstName", "type": "string", "isRequired": true, "maxLength": 50 },
+        { "name": "LastName", "type": "string", "isRequired": true, "maxLength": 50 },
+        { "name": "Email", "type": "string", "isRequired": true, "maxLength": 200 },
+        { "name": "Phone", "type": "string", "maxLength": 20 }
+      ]
+    },
+    {
+      "name": "Appointment",
+      "generateCrud": true,
+      "properties": [
+        { "name": "Id", "type": "int", "isKey": true },
+        { "name": "PetId", "type": "int", "isRequired": true },
+        { "name": "OwnerId", "type": "int", "isRequired": true },
+        { "name": "AppointmentDate", "type": "DateTime", "isRequired": true },
+        { "name": "Reason", "type": "string", "maxLength": 500 }
+      ]
+    }
+  ],
+  "controllers": []
+}
