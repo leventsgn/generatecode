@@ -98,3 +98,18 @@ Repository includes [`render.yaml`](./render.yaml) for one-click deploy of the `
 - Build command: `npm ci`
 - Start command: `npm start`
 - Health check path: `/health`
+
+### LLM standard enhancement (Groq key, OpenAI-compatible API)
+
+Web UI includes a standard-analysis tab where you can improve a selected standard profile via LLM.
+
+Configure these environment variables on Render:
+
+- `GROQ_API_KEY`: your Groq API key (required)
+- `GROQ_MODEL`: model id (default: `openai/gpt-oss-120b`)
+- `GROQ_BASE_URL`: API base URL (default: `https://api.groq.com/openai/v1`)
+
+Backend endpoints:
+
+- `GET /api/llm/status`: configuration/model status
+- `POST /api/llm/enhance-standard`: improves a standard profile and document

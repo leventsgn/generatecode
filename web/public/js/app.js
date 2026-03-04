@@ -5,10 +5,12 @@ const state = {
   generatedFiles: {},
   currentFile: null,
   editingTableIndex: -1,
-  editingDtoIndex: -1
+  editingDtoIndex: -1,
+  standards: [],
+  selectedStandardId: ''
 };
 
-const STORAGE_KEY = 'generatecode_workspace_v2';
+const STORAGE_KEY = 'generatecode_workspace_v3';
 
 // ==================== UTIL ====================
 
@@ -32,6 +34,66 @@ function toPascalCase(text) {
   return text.replace(/(^|_)(\w)/g, (_, __, ch) => ch.toUpperCase());
 }
 
+function toDisplayDate(value) {
+  try {
+    return new Date(value).toLocaleString('tr-TR');
+  } catch {
+    return value;
+  }
+}
+
+function normalizePath(value) {
+  return String(value || '').replace(/\\/g, '/');
+}
+
+function shouldAnalyzeFile(path) {
+  const lower = normalizePath(path).toLowerCase();
+  return (
+    lower.endsWith('.csproj') ||
+    lower.endsWith('.cs') ||
+    lower.endsWith('.sln') ||
+    lower.endsWith('.editorconfig') ||
+    lower.endsWith('appsettings.json')
+  );
+}
+
+function findFirstMatch(text, regex, defaultValue = '') {
+  const match = (text || '').match(regex);
+  return match ? match[1].trim() : defaultValue;
+}
+
+function mapDbProviderFromCode(content) {
+  const code = content || '';
+  if (/UseSqlServer\s*\(/i.test(code)) return 'SqlServer';
+  if (/UseNpgsql\s*\(/i.test(code)) return 'PostgreSQL';
+  if (/UseMySql\s*\(/i.test(code)) return 'MySQL';
+  if (/UseInMemoryDatabase\s*\(/i.test(code)) return 'InMemory';
+  return 'InMemory';
+}
+
+function detectRouteCase(routes) {
+  if (!routes.length) return 'kebab';
+  if (routes.some(route => route.includes('-'))) return 'kebab';
+  if (routes.some(route => /[A-Z]/.test(route))) return 'camel';
+  return 'lower';
+}
+
+function inferRoutePrefix(routes) {
+  if (!routes.length) return 'api';
+  const route = routes.find(Boolean);
+  if (!route) return 'api';
+  const normalized = route.replace(/^\/+/, '');
+  const firstSegment = normalized.split('/')[0];
+  return firstSegment || 'api';
+}
+
+function getProjectRootName(files) {
+  if (!files.length) return 'ImportedProject';
+  const first = normalizePath(files[0].path);
+  const root = first.split('/')[0];
+  return root || 'ImportedProject';
+}
+
 function getConfigSnapshot() {
   return {
     projectName: document.getElementById('projectName').value || 'MyApi',
@@ -46,7 +108,8 @@ function getConfigSnapshot() {
     dbPort: document.getElementById('dbPort').value,
     dbName: document.getElementById('dbName').value,
     dbUser: document.getElementById('dbUser').value,
-    dbPassword: document.getElementById('dbPassword').value
+    dbPassword: document.getElementById('dbPassword').value,
+    selectedStandardId: state.selectedStandardId || ''
   };
 }
 
@@ -64,7 +127,8 @@ function applyConfigSnapshot(snapshot = {}) {
     dbPort: '5432',
     dbName: '',
     dbUser: '',
-    dbPassword: ''
+    dbPassword: '',
+    selectedStandardId: ''
   };
 
   const cfg = { ...defaults, ...snapshot };
@@ -81,13 +145,16 @@ function applyConfigSnapshot(snapshot = {}) {
   document.getElementById('dbName').value = cfg.dbName;
   document.getElementById('dbUser').value = cfg.dbUser;
   document.getElementById('dbPassword').value = cfg.dbPassword;
+  state.selectedStandardId = cfg.selectedStandardId || '';
 }
 
 function persistWorkspace() {
   const payload = {
     config: getConfigSnapshot(),
     tables: state.tables,
-    dtos: state.dtos
+    dtos: state.dtos,
+    standards: state.standards,
+    selectedStandardId: state.selectedStandardId
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
@@ -102,6 +169,8 @@ function restoreWorkspace() {
     applyConfigSnapshot(payload.config || {});
     state.tables = Array.isArray(payload.tables) ? payload.tables : [];
     state.dtos = Array.isArray(payload.dtos) ? payload.dtos : [];
+    state.standards = Array.isArray(payload.standards) ? payload.standards : [];
+    state.selectedStandardId = payload.selectedStandardId || payload.config?.selectedStandardId || state.selectedStandardId;
   } catch {
     localStorage.removeItem(STORAGE_KEY);
   }
@@ -125,6 +194,367 @@ function updateStats() {
   document.getElementById('statDtos').textContent = String(state.dtos.length);
   document.getElementById('statFiles').textContent = String(Object.keys(state.generatedFiles).length);
   document.getElementById('generatedFileCount').textContent = `${Object.keys(state.generatedFiles).length} dosya`;
+}
+
+// ==================== STANDARDS ====================
+
+function getStandardById(id) {
+  return state.standards.find(standard => standard.id === id) || null;
+}
+
+function getActiveStandardProfile() {
+  return getStandardById(state.selectedStandardId);
+}
+
+function renderStandardDocument(standard) {
+  const preview = document.getElementById('standardDocPreview');
+  if (!preview) return;
+
+  if (!standard) {
+    preview.textContent = 'Henuz standart analizi yapilmadi.';
+    return;
+  }
+
+  preview.textContent = standard.document || 'Standart dokumani olusturulamadi.';
+}
+
+function renderStandardSelects() {
+  const listSelect = document.getElementById('standardsListSelect');
+  const activeSelect = document.getElementById('activeStandardSelect');
+  if (!listSelect || !activeSelect) return;
+
+  const defaultListOption = '<option value="">Standart secilmedi</option>';
+  const defaultActiveOption = '<option value="">Varsayilan (standart yok)</option>';
+  const options = state.standards.map(standard => {
+    const created = toDisplayDate(standard.createdAt);
+    return `<option value="${standard.id}">${escapeHtml(standard.name)} (${escapeHtml(created)})</option>`;
+  }).join('');
+
+  listSelect.innerHTML = defaultListOption + options;
+  activeSelect.innerHTML = defaultActiveOption + options;
+
+  if (state.selectedStandardId && getStandardById(state.selectedStandardId)) {
+    listSelect.value = state.selectedStandardId;
+    activeSelect.value = state.selectedStandardId;
+  } else {
+    state.selectedStandardId = '';
+    listSelect.value = '';
+    activeSelect.value = '';
+  }
+
+  renderStandardDocument(getActiveStandardProfile());
+}
+
+function createStandardDocument(profile, stats) {
+  return [
+    `# ${profile.name}`,
+    '',
+    `- Olusturma tarihi: ${toDisplayDate(profile.createdAt)}`,
+    `- Kaynak proje: ${profile.sourceProject}`,
+    `- Toplam analiz edilen dosya: ${stats.analyzedFileCount}`,
+    `- Controller dosyasi: ${stats.controllerFileCount}`,
+    `- Service dosyasi: ${stats.serviceFileCount}`,
+    '',
+    '## Tespit Edilen Kurallar',
+    `- Target framework: ${profile.targetFramework}`,
+    `- Root namespace: ${profile.rootNamespace}`,
+    `- DB provider egilimi: ${profile.dbProvider}`,
+    `- Service interface kullanimi: ${profile.useServiceInterfaces ? 'Evet' : 'Hayir'}`,
+    `- Controller adlandirma: ${profile.controllerPlural ? 'Cogul (ProductsController)' : 'Tekil (ProductController)'}`,
+    `- Route case stili: ${profile.routeCase}`,
+    `- Route prefix: ${profile.routePrefix}`,
+    '',
+    '## Uretimde Uygulama',
+    '- Bu profil secilirse controller route ve isimleri bu standarda gore olusur.',
+    '- Service interface tercihleri profile gore kullanilir.',
+    '- Framework ve DB varsayimlari profile gore ayarlanir.'
+  ].join('\n');
+}
+
+function analyzeProjectStandard(projectFiles, customName) {
+  const files = projectFiles.map(file => ({
+    path: normalizePath(file.path),
+    pathLower: normalizePath(file.path).toLowerCase(),
+    content: file.content || ''
+  }));
+
+  const projectRoot = getProjectRootName(files);
+  const csprojFile = files.find(file => file.pathLower.endsWith('.csproj'));
+  const csprojContent = csprojFile?.content || '';
+
+  const targetFramework = findFirstMatch(csprojContent, /<TargetFramework>([^<]+)<\/TargetFramework>/i, 'net8.0');
+  const rootNamespace = findFirstMatch(
+    csprojContent,
+    /<RootNamespace>([^<]+)<\/RootNamespace>/i,
+    projectRoot.replace(/[^A-Za-z0-9_]/g, '')
+  );
+
+  const sourceProject = csprojFile
+    ? csprojFile.path.split('/').pop().replace('.csproj', '')
+    : projectRoot;
+
+  const controllerFiles = files.filter(file => file.pathLower.includes('/controllers/') && file.pathLower.endsWith('.cs'));
+  const serviceFiles = files.filter(file => file.pathLower.includes('/services/') && file.pathLower.endsWith('.cs'));
+  const programFile = files.find(file => /\/program\.cs$/i.test(file.pathLower));
+
+  let pluralControllers = 0;
+  let singularControllers = 0;
+  const routes = [];
+
+  controllerFiles.forEach(file => {
+    const classRegex = /class\s+([A-Za-z0-9_]+)\s*:\s*ControllerBase/g;
+    let classMatch = classRegex.exec(file.content);
+    while (classMatch) {
+      const className = classMatch[1];
+      if (className.endsWith('sController')) {
+        pluralControllers += 1;
+      } else if (className.endsWith('Controller')) {
+        singularControllers += 1;
+      }
+      classMatch = classRegex.exec(file.content);
+    }
+
+    const routeRegex = /\[Route\("([^"]+)"\)\]/g;
+    let routeMatch = routeRegex.exec(file.content);
+    while (routeMatch) {
+      routes.push(routeMatch[1]);
+      routeMatch = routeRegex.exec(file.content);
+    }
+  });
+
+  const routePrefix = inferRoutePrefix(routes);
+  const routeSegments = routes
+    .map(route => route.replace(/^\/+/, ''))
+    .map(route => (route.startsWith(`${routePrefix}/`) ? route.slice(routePrefix.length + 1) : route));
+
+  const routeCase = detectRouteCase(routeSegments);
+  const controllerPlural = pluralControllers >= singularControllers;
+
+  const hasServiceInterfaceFile = serviceFiles.some(file => /\/services\/i[A-Za-z0-9_]+service\.cs$/i.test(file.pathLower));
+  const hasServiceInterfaceRegistration = /AddScoped<\s*I[A-Za-z0-9_]+Service/i.test(programFile?.content || '');
+  const useServiceInterfaces = hasServiceInterfaceFile || hasServiceInterfaceRegistration;
+
+  const dbProvider = mapDbProviderFromCode(files.map(file => file.content).join('\n'));
+
+  const profile = {
+    id: `std-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: (customName || '').trim() || `${sourceProject} Standard`,
+    sourceProject,
+    createdAt: new Date().toISOString(),
+    targetFramework,
+    rootNamespace,
+    dbProvider,
+    useServiceInterfaces,
+    controllerPlural,
+    routeCase,
+    routePrefix
+  };
+
+  profile.document = createStandardDocument(profile, {
+    analyzedFileCount: files.length,
+    controllerFileCount: controllerFiles.length,
+    serviceFileCount: serviceFiles.length
+  });
+
+  return profile;
+}
+
+async function analyzeUploadedProjectStandard() {
+  const input = document.getElementById('projectUploadInput');
+  const files = Array.from(input?.files || []);
+  if (!files.length) {
+    alert('Lutfen analiz icin proje klasoru secin.');
+    return;
+  }
+
+  const analyzableFiles = files.filter(file => shouldAnalyzeFile(file.webkitRelativePath || file.name));
+  if (!analyzableFiles.length) {
+    alert('Analiz icin uygun dosya bulunamadi.');
+    return;
+  }
+
+  const button = document.getElementById('analyzeStandardBtn');
+  const original = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Analiz...';
+
+  try {
+    const projectFiles = await Promise.all(analyzableFiles.map(async file => ({
+      path: file.webkitRelativePath || file.name,
+      content: await file.text()
+    })));
+
+    const customName = document.getElementById('standardNameInput').value;
+    const profile = analyzeProjectStandard(projectFiles, customName);
+
+    state.standards.push(profile);
+    state.selectedStandardId = profile.id;
+    renderStandardSelects();
+    applyStandardProfileToConfig(profile, false);
+    persistWorkspace();
+    showToast(`Standart olusturuldu: ${profile.name}`);
+  } catch (error) {
+    alert(`Standart analizi basarisiz: ${error.message}`);
+  } finally {
+    button.disabled = false;
+    button.innerHTML = original;
+  }
+}
+
+function applyStandardProfileToConfig(profile, showMessage = true) {
+  if (!profile) return;
+
+  if (profile.targetFramework) {
+    document.getElementById('targetFramework').value = profile.targetFramework;
+  }
+  if (profile.dbProvider) {
+    document.getElementById('targetDbProvider').value = profile.dbProvider;
+  }
+  const rootNamespaceInput = document.getElementById('rootNamespace');
+  if (!rootNamespaceInput.value || rootNamespaceInput.value === 'MyApi') {
+    rootNamespaceInput.value = profile.rootNamespace || rootNamespaceInput.value;
+  }
+
+  if (showMessage) {
+    showToast(`Standart uygulandi: ${profile.name}`);
+  }
+}
+
+function setActiveStandard(id, applyConfig = false) {
+  state.selectedStandardId = id || '';
+  renderStandardSelects();
+  const active = getActiveStandardProfile();
+  if (applyConfig && active) {
+    applyStandardProfileToConfig(active, true);
+  }
+  persistWorkspace();
+}
+
+function deleteSelectedStandard() {
+  const select = document.getElementById('standardsListSelect');
+  const selectedId = select?.value || state.selectedStandardId;
+  if (!selectedId) {
+    alert('Silinecek standart secili degil.');
+    return;
+  }
+
+  const standard = getStandardById(selectedId);
+  if (!standard) return;
+  if (!confirm(`"${standard.name}" standardini silmek istiyor musunuz?`)) return;
+
+  state.standards = state.standards.filter(item => item.id !== selectedId);
+  if (state.selectedStandardId === selectedId) {
+    state.selectedStandardId = '';
+  }
+
+  renderStandardSelects();
+  persistWorkspace();
+  showToast('Standart silindi.');
+}
+
+function downloadSelectedStandardDocument() {
+  const selectedId = document.getElementById('standardsListSelect')?.value || state.selectedStandardId;
+  const standard = getStandardById(selectedId);
+  if (!standard) {
+    alert('Lutfen once bir standart secin.');
+    return;
+  }
+
+  const blob = new Blob([standard.document || ''], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `${standard.name.replace(/[^A-Za-z0-9_-]/g, '_')}.md`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+async function syncLlmStatus() {
+  const button = document.getElementById('enhanceStandardWithLlmBtn');
+  if (!button) return;
+
+  try {
+    const response = await fetch('/api/llm/status');
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'LLM status okunamadi');
+    }
+
+    if (!data.configured) {
+      button.disabled = true;
+      button.title = 'GROQ_API_KEY serverda tanimli degil.';
+      return;
+    }
+
+    button.disabled = false;
+    button.title = `LLM model: ${data.model}`;
+  } catch {
+    button.title = 'LLM durumu okunamadi.';
+  }
+}
+
+async function enhanceSelectedStandardWithLlm() {
+  const standardsSelect = document.getElementById('standardsListSelect');
+  const selectedId = standardsSelect?.value || state.selectedStandardId;
+  if (!selectedId) {
+    alert('Lutfen once bir standart secin.');
+    return;
+  }
+
+  const standard = getStandardById(selectedId);
+  if (!standard) {
+    alert('Secili standart bulunamadi.');
+    return;
+  }
+
+  const button = document.getElementById('enhanceStandardWithLlmBtn');
+  if (!button) return;
+
+  const original = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>LLM isliyor...';
+
+  try {
+    const response = await fetch('/api/llm/enhance-standard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ standard })
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'LLM istegi basarisiz.');
+    }
+
+    const updated = {
+      ...standard,
+      ...data.standard,
+      id: standard.id,
+      sourceProject: standard.sourceProject,
+      createdAt: standard.createdAt,
+      enhancedAt: new Date().toISOString(),
+      llmProvider: data.meta?.provider || 'groq-openai-compatible',
+      llmModel: data.meta?.model || ''
+    };
+
+    const index = state.standards.findIndex(item => item.id === selectedId);
+    if (index >= 0) {
+      state.standards[index] = updated;
+    }
+
+    state.selectedStandardId = selectedId;
+    renderStandardSelects();
+    renderStandardDocument(updated);
+    applyStandardProfileToConfig(updated, false);
+    persistWorkspace();
+    showToast(`LLM ile guncellendi: ${updated.name}`);
+  } catch (error) {
+    alert(`LLM zenginlestirme hatasi: ${error.message}`);
+  } finally {
+    button.disabled = false;
+    button.innerHTML = original;
+  }
 }
 
 // ==================== TABLE MANAGEMENT ====================
@@ -554,6 +984,8 @@ function generateCode() {
     return;
   }
 
+  const standardProfile = getActiveStandardProfile();
+
   const config = {
     projectName: document.getElementById('projectName').value || 'MyApi',
     rootNamespace: document.getElementById('rootNamespace').value || 'MyApi',
@@ -563,13 +995,18 @@ function generateCode() {
     optFluentValidation: document.getElementById('optFluentValidation').checked,
     optAutoMapper: document.getElementById('optAutoMapper').checked,
     tables: state.tables,
-    dtos: state.dtos
+    dtos: state.dtos,
+    standardProfile
   };
 
   state.generatedFiles = CodeGen.generateAll(config);
   renderGeneratedCode();
   persistWorkspace();
-  showToast(`${Object.keys(state.generatedFiles).length} dosya hazırlandı.`);
+  if (standardProfile) {
+    showToast(`${Object.keys(state.generatedFiles).length} dosya hazırlandı (${standardProfile.name} standardı).`);
+  } else {
+    showToast(`${Object.keys(state.generatedFiles).length} dosya hazırlandı.`);
+  }
 }
 
 function renderGeneratedCode() {
@@ -707,7 +1144,7 @@ function loadDemoData() {
 }
 
 function resetWorkspace() {
-  if (!confirm('Tüm tablo/DTO verisi ve kod çıktısı temizlensin mi?')) {
+  if (!confirm('Tüm tablo/DTO verisi ve kod çıktısı temizlensin mi? (Standartlar korunur)')) {
     return;
   }
 
@@ -718,17 +1155,18 @@ function resetWorkspace() {
   state.editingTableIndex = -1;
   state.editingDtoIndex = -1;
 
-  applyConfigSnapshot();
+  applyConfigSnapshot({ selectedStandardId: state.selectedStandardId });
   document.getElementById('tableSearch').value = '';
   document.getElementById('dtoSearch').value = '';
   document.getElementById('dbStatus').innerHTML = '';
   document.getElementById('dbTablesList').innerHTML = '';
 
-  localStorage.removeItem(STORAGE_KEY);
   renderTables();
   renderDtos();
+  renderStandardSelects();
   clearGeneratedView();
   updateStats();
+  persistWorkspace();
   showToast('Çalışma alanı sıfırlandı.');
 }
 
@@ -743,7 +1181,8 @@ function bindAutoSaveEvents() {
   const ids = [
     'projectName', 'rootNamespace', 'targetDbProvider', 'targetFramework',
     'optSwagger', 'optFluentValidation', 'optAutoMapper',
-    'dbProvider', 'dbHost', 'dbPort', 'dbName', 'dbUser', 'dbPassword'
+    'dbProvider', 'dbHost', 'dbPort', 'dbName', 'dbUser', 'dbPassword',
+    'activeStandardSelect'
   ];
 
   ids.forEach(id => {
@@ -762,6 +1201,43 @@ function bindShortcuts() {
   });
 }
 
+function bindStandardEvents() {
+  const analyzeBtn = document.getElementById('analyzeStandardBtn');
+  const standardsList = document.getElementById('standardsListSelect');
+  const applyBtn = document.getElementById('applyStandardBtn');
+  const enhanceBtn = document.getElementById('enhanceStandardWithLlmBtn');
+  const activeSelect = document.getElementById('activeStandardSelect');
+  const downloadBtn = document.getElementById('downloadStandardDocBtn');
+  const deleteBtn = document.getElementById('deleteStandardBtn');
+
+  if (!analyzeBtn || !standardsList || !applyBtn || !enhanceBtn || !activeSelect || !downloadBtn || !deleteBtn) {
+    return;
+  }
+
+  analyzeBtn.addEventListener('click', analyzeUploadedProjectStandard);
+
+  standardsList.addEventListener('change', event => {
+    renderStandardDocument(getStandardById(event.target.value));
+  });
+
+  applyBtn.addEventListener('click', () => {
+    const selectedId = standardsList.value;
+    if (!selectedId) {
+      alert('Lütfen bir standart seçin.');
+      return;
+    }
+    setActiveStandard(selectedId, true);
+  });
+
+  activeSelect.addEventListener('change', event => {
+    setActiveStandard(event.target.value, false);
+  });
+
+  enhanceBtn.addEventListener('click', enhanceSelectedStandardWithLlm);
+  downloadBtn.addEventListener('click', downloadSelectedStandardDocument);
+  deleteBtn.addEventListener('click', deleteSelectedStandard);
+}
+
 document.getElementById('dbProvider').addEventListener('change', function onProviderChange() {
   const portMap = { postgresql: 5432, mssql: 1433, mysql: 3306 };
   document.getElementById('dbPort').value = portMap[this.value] || 5432;
@@ -773,8 +1249,12 @@ document.getElementById('dbProvider').addEventListener('change', function onProv
 restoreWorkspace();
 renderTables();
 renderDtos();
+renderStandardSelects();
 clearGeneratedView();
 updateStats();
 bindFilterEvents();
 bindAutoSaveEvents();
 bindShortcuts();
+bindStandardEvents();
+syncLlmStatus();
+

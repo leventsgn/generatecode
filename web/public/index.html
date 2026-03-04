@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GenerateCode - .NET Kod Üretici</title>
+  <title>GenerateCode - .NET Kod Uretici</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -17,11 +17,11 @@
     <div class="brand-row container-fluid">
       <div>
         <h1 class="brand-title"><i class="bi bi-code-slash me-2"></i>GenerateCode Studio</h1>
-        <p class="brand-subtitle">Tabloları tanımla, DTO'ları ekle, hazır .NET katmanlarını üret.</p>
+        <p class="brand-subtitle">Tablolari tanimla, DTO ekle, hazir .NET katmanlarini uret.</p>
       </div>
       <div class="d-flex flex-wrap gap-2">
-        <span class="shortcut-chip"><i class="bi bi-magic"></i>Hızlı başlangıç için örnek şema</span>
-        <span class="shortcut-chip"><i class="bi bi-keyboard"></i>Kısayol: Ctrl + Enter</span>
+        <span class="shortcut-chip"><i class="bi bi-magic"></i>Ornek sema ile hizli baslangic</span>
+        <span class="shortcut-chip"><i class="bi bi-keyboard"></i>Kisayol: Ctrl + Enter</span>
       </div>
     </div>
   </header>
@@ -29,10 +29,10 @@
   <div class="page-shell container-fluid">
     <div class="quick-toolbar reveal">
       <button class="btn btn-sm btn-outline-dark" onclick="loadDemoData()">
-        <i class="bi bi-stars me-1"></i>Örnek Şema Yükle
+        <i class="bi bi-stars me-1"></i>Ornek Sema Yukle
       </button>
       <button class="btn btn-sm btn-outline-danger" onclick="resetWorkspace()">
-        <i class="bi bi-arrow-counterclockwise me-1"></i>Çalışma Alanını Sıfırla
+        <i class="bi bi-arrow-counterclockwise me-1"></i>Calisma Alanini Sifirla
       </button>
       <span class="stats-chip"><i class="bi bi-table"></i>Tablo: <strong id="statTables">0</strong></span>
       <span class="stats-chip"><i class="bi bi-collection"></i>DTO: <strong id="statDtos">0</strong></span>
@@ -56,7 +56,12 @@
               </li>
               <li class="nav-item">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabDatabase">
-                  <i class="bi bi-database me-1"></i>Veritabanı
+                  <i class="bi bi-database me-1"></i>Veritabani
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabStandards">
+                  <i class="bi bi-diagram-3 me-1"></i>Standartlar
                 </button>
               </li>
               <li class="nav-item">
@@ -70,8 +75,8 @@
               <div class="tab-pane fade show active" id="tabTables">
                 <div class="section-head">
                   <div>
-                    <h6 class="panel-title">Veritabanı Tabloları</h6>
-                    <p class="section-subtitle">Model ve CRUD üretimi için tablo yapısını tanımla.</p>
+                    <h6 class="panel-title">Veritabani Tablolari</h6>
+                    <p class="section-subtitle">Model ve CRUD uretimi icin tablo yapisini tanimla.</p>
                   </div>
                   <button class="btn btn-sm btn-primary" onclick="addTable()">
                     <i class="bi bi-plus-lg me-1"></i>Tablo Ekle
@@ -85,7 +90,7 @@
                 <div class="section-head">
                   <div>
                     <h6 class="panel-title">Request/Response DTO</h6>
-                    <p class="section-subtitle">Girdi/çıktı modellerini ayrı yönet.</p>
+                    <p class="section-subtitle">Girdi/cikti modellerini ayri yonet.</p>
                   </div>
                   <button class="btn btn-sm btn-primary" onclick="addDto()">
                     <i class="bi bi-plus-lg me-1"></i>DTO Ekle
@@ -96,11 +101,11 @@
               </div>
 
               <div class="tab-pane fade" id="tabDatabase">
-                <h6 class="panel-title mb-1">Veritabanı Bağlantısı</h6>
-                <p class="section-subtitle mb-3">Var olan tabloları otomatik içe aktar.</p>
+                <h6 class="panel-title mb-1">Veritabani Baglantisi</h6>
+                <p class="section-subtitle mb-3">Var olan tablolari otomatik ice aktar.</p>
                 <div class="row g-2">
                   <div class="col-12">
-                    <label class="form-label small">Sağlayıcı</label>
+                    <label class="form-label small">Saglayici</label>
                     <select id="dbProvider" class="form-select form-select-sm">
                       <option value="postgresql">PostgreSQL</option>
                       <option value="mssql">SQL Server</option>
@@ -116,23 +121,23 @@
                     <input type="number" id="dbPort" class="form-control form-control-sm" value="5432">
                   </div>
                   <div class="col-12">
-                    <label class="form-label small">Veritabanı</label>
+                    <label class="form-label small">Veritabani</label>
                     <input type="text" id="dbName" class="form-control form-control-sm">
                   </div>
                   <div class="col-6">
-                    <label class="form-label small">Kullanıcı</label>
+                    <label class="form-label small">Kullanici</label>
                     <input type="text" id="dbUser" class="form-control form-control-sm">
                   </div>
                   <div class="col-6">
-                    <label class="form-label small">Şifre</label>
+                    <label class="form-label small">Sifre</label>
                     <input type="password" id="dbPassword" class="form-control form-control-sm">
                   </div>
                   <div class="col-12 mt-2">
                     <button class="btn btn-sm btn-outline-primary me-2" onclick="testDbConnection()">
-                      <i class="bi bi-plug me-1"></i>Bağlantıyı Test Et
+                      <i class="bi bi-plug me-1"></i>Baglantiyi Test Et
                     </button>
                     <button class="btn btn-sm btn-success" onclick="fetchTablesFromDb()">
-                      <i class="bi bi-download me-1"></i>Tabloları Getir
+                      <i class="bi bi-download me-1"></i>Tablolari Getir
                     </button>
                   </div>
                   <div class="col-12"><div id="dbStatus"></div></div>
@@ -140,12 +145,69 @@
                 </div>
               </div>
 
+              <div class="tab-pane fade" id="tabStandards">
+                <h6 class="panel-title mb-1">Proje Standardi Analizi</h6>
+                <p class="section-subtitle mb-3">Mevcut bir projeyi yukleyip kod standardi dokumani olustur.</p>
+
+                <div class="standard-dropzone mb-3">
+                  <label for="projectUploadInput" class="form-label small mb-1">Proje klasoru yukle</label>
+                  <input id="projectUploadInput" type="file" class="form-control form-control-sm" webkitdirectory directory multiple>
+                  <small class="text-muted d-block mt-2">.csproj, Program.cs, Controllers ve Services dosyalari analiz edilir.</small>
+                </div>
+
+                <div class="row g-2 mb-3">
+                  <div class="col-8">
+                    <label class="form-label small">Standart adi (opsiyonel)</label>
+                    <input type="text" id="standardNameInput" class="form-control form-control-sm" placeholder="Orn: CompanyApiStandard">
+                  </div>
+                  <div class="col-4 d-flex align-items-end">
+                    <button class="btn btn-sm btn-primary w-100" id="analyzeStandardBtn">
+                      <i class="bi bi-search me-1"></i>Analiz Et
+                    </button>
+                  </div>
+                </div>
+
+                <div class="row g-2 mb-2">
+                  <div class="col-12">
+                    <label class="form-label small">Kayitli standartlar</label>
+                    <select id="standardsListSelect" class="form-select form-select-sm">
+                      <option value="">Standart secilmedi</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap mb-3">
+                  <button class="btn btn-sm btn-outline-primary" id="applyStandardBtn">
+                    <i class="bi bi-check2-circle me-1"></i>Aktif Yap
+                  </button>
+                  <button class="btn btn-sm btn-outline-primary" id="enhanceStandardWithLlmBtn">
+                    <i class="bi bi-cpu me-1"></i>LLM ile Zenginlestir
+                  </button>
+                  <button class="btn btn-sm btn-outline-light" id="downloadStandardDocBtn">
+                    <i class="bi bi-file-earmark-arrow-down me-1"></i>Dokumani Indir
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger" id="deleteStandardBtn">
+                    <i class="bi bi-trash me-1"></i>Sil
+                  </button>
+                </div>
+
+                <label class="form-label small">Standart dokumani</label>
+                <pre id="standardDocPreview" class="standard-doc-preview">Henuz standart analizi yapilmadi.</pre>
+              </div>
+
               <div class="tab-pane fade" id="tabSettings">
-                <h6 class="panel-title mb-1">Proje Ayarları</h6>
-                <p class="section-subtitle mb-3">Üretilecek projenin temel parametreleri.</p>
+                <h6 class="panel-title mb-1">Proje Ayarlari</h6>
+                <p class="section-subtitle mb-3">Uretilecek projenin temel parametreleri.</p>
                 <div class="row g-2">
+                  <div class="col-12">
+                    <label class="form-label small">Aktif Standart Profili</label>
+                    <select id="activeStandardSelect" class="form-select form-select-sm">
+                      <option value="">Varsayilan (standart yok)</option>
+                    </select>
+                    <small class="text-muted">Secilen standart, kod uretiminde adlandirma ve altyapi tercihlerini etkiler.</small>
+                  </div>
                   <div class="col-6">
-                    <label class="form-label small">Proje Adı</label>
+                    <label class="form-label small">Proje Adi</label>
                     <input type="text" id="projectName" class="form-control form-control-sm" value="MyApi">
                   </div>
                   <div class="col-6">
@@ -190,10 +252,10 @@
           <div class="generate-wrap">
             <div class="d-grid">
               <button class="btn btn-lg btn-success btn-generate" onclick="generateCode()">
-                <i class="bi bi-lightning-charge-fill me-2"></i>Kod Üret
+                <i class="bi bi-lightning-charge-fill me-2"></i>Kod Uret
               </button>
             </div>
-            <div class="generate-hint">İpucu: Form alanları otomatik kaydedilir.</div>
+            <div class="generate-hint">Ipu cu: Form alanlari otomatik kaydedilir.</div>
           </div>
         </section>
       </div>
@@ -201,14 +263,14 @@
       <div class="col-lg-7">
         <section class="panel result-panel card reveal">
           <div class="card-header bg-dark text-light d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-file-earmark-code me-2"></i>Üretilen Kod</span>
+            <span><i class="bi bi-file-earmark-code me-2"></i>Uretilen Kod</span>
             <div class="d-flex align-items-center gap-2">
               <span class="badge bg-secondary" id="generatedFileCount">0 dosya</span>
               <button class="btn btn-sm btn-outline-light" onclick="copyCurrentCode()">
                 <i class="bi bi-clipboard me-1"></i>Kopyala
               </button>
               <button class="btn btn-sm btn-outline-light" onclick="downloadAllCode()">
-                <i class="bi bi-download me-1"></i>Tümünü İndir
+                <i class="bi bi-download me-1"></i>Tumunu Indir
               </button>
             </div>
           </div>
@@ -219,8 +281,8 @@
             <div class="code-container" id="codeContainer">
               <div class="empty-state text-center py-5">
                 <i class="bi bi-code-square display-4"></i>
-                <p class="mt-3 mb-1">Sol panelden tablo/DTO ekleyip üretime başla.</p>
-                <small>Örnek başlangıç için “Örnek Şema Yükle” butonunu kullanabilirsin.</small>
+                <p class="mt-3 mb-1">Sol panelden tablo/DTO ekleyip uretime basla.</p>
+                <small>Ornek baslangic icin "Ornek Sema Yukle" butonunu kullanabilirsin.</small>
               </div>
             </div>
           </div>
@@ -233,23 +295,23 @@
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="tableModalTitle">Tablo Düzenle</h5>
+          <h5 class="modal-title" id="tableModalTitle">Tablo Duzenle</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div class="row g-2 mb-3">
             <div class="col-6">
-              <label class="form-label small">Tablo Adı</label>
+              <label class="form-label small">Tablo Adi</label>
               <input type="text" id="modalTableName" class="form-control form-control-sm" placeholder="Products">
             </div>
             <div class="col-6 d-flex align-items-end">
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" id="modalGenCrud" checked>
-                <label class="form-check-label small">CRUD Üret</label>
+                <label class="form-check-label small">CRUD Uret</label>
               </div>
             </div>
           </div>
-          <h6>Sütunlar</h6>
+          <h6>Sutunlar</h6>
           <table class="table table-sm table-bordered" id="modalColumnsTable">
             <thead class="table-light">
               <tr>
@@ -264,11 +326,11 @@
             <tbody id="modalColumnsBody"></tbody>
           </table>
           <button class="btn btn-sm btn-outline-primary" onclick="addColumnToModal()">
-            <i class="bi bi-plus-lg me-1"></i>Sütun Ekle
+            <i class="bi bi-plus-lg me-1"></i>Sutun Ekle
           </button>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Iptal</button>
           <button class="btn btn-primary" onclick="saveTable()">Kaydet</button>
         </div>
       </div>
@@ -279,17 +341,17 @@
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="dtoModalTitle">DTO Düzenle</h5>
+          <h5 class="modal-title" id="dtoModalTitle">DTO Duzenle</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div class="row g-2 mb-3">
             <div class="col-6">
-              <label class="form-label small">DTO Adı</label>
+              <label class="form-label small">DTO Adi</label>
               <input type="text" id="modalDtoName" class="form-control form-control-sm" placeholder="CreateProductRequest">
             </div>
             <div class="col-6">
-              <label class="form-label small">Tür</label>
+              <label class="form-label small">Tur</label>
               <select id="modalDtoType" class="form-select form-select-sm">
                 <option value="request">Request</option>
                 <option value="response">Response</option>
@@ -314,7 +376,7 @@
           </button>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Iptal</button>
           <button class="btn btn-primary" onclick="saveDto()">Kaydet</button>
         </div>
       </div>
