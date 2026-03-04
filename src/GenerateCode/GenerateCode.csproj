@@ -8,8 +8,4 @@
     <RootNamespace>GenerateCode</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="8.0.0" />
-  </ItemGroup>
-
 </Project>

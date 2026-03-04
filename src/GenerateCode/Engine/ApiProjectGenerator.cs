@@ -38,7 +38,7 @@ public class ApiProjectGenerator
         return result;
     }
 
-    internal List<ICodeGenerator> BuildGenerators()
+    public List<ICodeGenerator> BuildGenerators()
     {
         var generators = new List<ICodeGenerator>();
 

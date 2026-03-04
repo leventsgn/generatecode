@@ -1,0 +1,6 @@
+{
+  "template": "worker",
+  "projectName": "SampleWorker",
+  "rootNamespace": "SampleWorker",
+  "targetFramework": "net8.0"
+}

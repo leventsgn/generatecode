@@ -3,179 +3,208 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GenerateCode - .NET API Kod Üretici</title>
+  <title>GenerateCode - .NET Kod Üretici</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
   <link href="css/style.css" rel="stylesheet">
 </head>
 <body>
-  <nav class="navbar navbar-dark bg-dark px-3">
-    <span class="navbar-brand fw-bold"><i class="bi bi-code-slash me-2"></i>GenerateCode</span>
-    <span class="text-light small">.NET API Kod Üretici</span>
-  </nav>
+  <header class="app-header">
+    <div class="brand-row container-fluid">
+      <div>
+        <h1 class="brand-title"><i class="bi bi-code-slash me-2"></i>GenerateCode Studio</h1>
+        <p class="brand-subtitle">Tabloları tanımla, DTO'ları ekle, hazır .NET katmanlarını üret.</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <span class="shortcut-chip"><i class="bi bi-magic"></i>Hızlı başlangıç için örnek şema</span>
+        <span class="shortcut-chip"><i class="bi bi-keyboard"></i>Kısayol: Ctrl + Enter</span>
+      </div>
+    </div>
+  </header>
 
-  <div class="container-fluid mt-3">
+  <div class="page-shell container-fluid">
+    <div class="quick-toolbar reveal">
+      <button class="btn btn-sm btn-outline-dark" onclick="loadDemoData()">
+        <i class="bi bi-stars me-1"></i>Örnek Şema Yükle
+      </button>
+      <button class="btn btn-sm btn-outline-danger" onclick="resetWorkspace()">
+        <i class="bi bi-arrow-counterclockwise me-1"></i>Çalışma Alanını Sıfırla
+      </button>
+      <span class="stats-chip"><i class="bi bi-table"></i>Tablo: <strong id="statTables">0</strong></span>
+      <span class="stats-chip"><i class="bi bi-collection"></i>DTO: <strong id="statDtos">0</strong></span>
+      <span class="stats-chip"><i class="bi bi-file-earmark-code"></i>Dosya: <strong id="statFiles">0</strong></span>
+    </div>
+
     <div class="row g-3">
-      <!-- LEFT PANEL: Configuration -->
       <div class="col-lg-5">
-        <!-- Tabs -->
-        <ul class="nav nav-tabs" id="configTabs">
-          <li class="nav-item">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabTables">
-              <i class="bi bi-table me-1"></i>Tablolar
-            </button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabRequests">
-              <i class="bi bi-arrow-up-circle me-1"></i>Request/Response
-            </button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabDatabase">
-              <i class="bi bi-database me-1"></i>Veritabanı
-            </button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabSettings">
-              <i class="bi bi-gear me-1"></i>Ayarlar
-            </button>
-          </li>
-        </ul>
+        <section class="panel config-panel reveal">
+          <div class="tabs-shell">
+            <ul class="nav nav-tabs" id="configTabs">
+              <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabTables">
+                  <i class="bi bi-table me-1"></i>Tablolar
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabRequests">
+                  <i class="bi bi-arrow-up-circle me-1"></i>Request/Response
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabDatabase">
+                  <i class="bi bi-database me-1"></i>Veritabanı
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabSettings">
+                  <i class="bi bi-gear me-1"></i>Ayarlar
+                </button>
+              </li>
+            </ul>
 
-        <div class="tab-content border border-top-0 rounded-bottom p-3 bg-white">
-          <!-- TABLES TAB -->
-          <div class="tab-pane fade show active" id="tabTables">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="mb-0">Veritabanı Tabloları</h6>
-              <button class="btn btn-sm btn-primary" onclick="addTable()">
-                <i class="bi bi-plus-lg me-1"></i>Tablo Ekle
+            <div class="tab-content p-3">
+              <div class="tab-pane fade show active" id="tabTables">
+                <div class="section-head">
+                  <div>
+                    <h6 class="panel-title">Veritabanı Tabloları</h6>
+                    <p class="section-subtitle">Model ve CRUD üretimi için tablo yapısını tanımla.</p>
+                  </div>
+                  <button class="btn btn-sm btn-primary" onclick="addTable()">
+                    <i class="bi bi-plus-lg me-1"></i>Tablo Ekle
+                  </button>
+                </div>
+                <input id="tableSearch" type="text" class="form-control form-control-sm filter-input" placeholder="Tablo ara...">
+                <div id="tablesList"></div>
+              </div>
+
+              <div class="tab-pane fade" id="tabRequests">
+                <div class="section-head">
+                  <div>
+                    <h6 class="panel-title">Request/Response DTO</h6>
+                    <p class="section-subtitle">Girdi/çıktı modellerini ayrı yönet.</p>
+                  </div>
+                  <button class="btn btn-sm btn-primary" onclick="addDto()">
+                    <i class="bi bi-plus-lg me-1"></i>DTO Ekle
+                  </button>
+                </div>
+                <input id="dtoSearch" type="text" class="form-control form-control-sm filter-input" placeholder="DTO ara...">
+                <div id="dtoList"></div>
+              </div>
+
+              <div class="tab-pane fade" id="tabDatabase">
+                <h6 class="panel-title mb-1">Veritabanı Bağlantısı</h6>
+                <p class="section-subtitle mb-3">Var olan tabloları otomatik içe aktar.</p>
+                <div class="row g-2">
+                  <div class="col-12">
+                    <label class="form-label small">Sağlayıcı</label>
+                    <select id="dbProvider" class="form-select form-select-sm">
+                      <option value="postgresql">PostgreSQL</option>
+                      <option value="mssql">SQL Server</option>
+                      <option value="mysql">MySQL</option>
+                    </select>
+                  </div>
+                  <div class="col-8">
+                    <label class="form-label small">Host</label>
+                    <input type="text" id="dbHost" class="form-control form-control-sm" value="localhost">
+                  </div>
+                  <div class="col-4">
+                    <label class="form-label small">Port</label>
+                    <input type="number" id="dbPort" class="form-control form-control-sm" value="5432">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small">Veritabanı</label>
+                    <input type="text" id="dbName" class="form-control form-control-sm">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small">Kullanıcı</label>
+                    <input type="text" id="dbUser" class="form-control form-control-sm">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small">Şifre</label>
+                    <input type="password" id="dbPassword" class="form-control form-control-sm">
+                  </div>
+                  <div class="col-12 mt-2">
+                    <button class="btn btn-sm btn-outline-primary me-2" onclick="testDbConnection()">
+                      <i class="bi bi-plug me-1"></i>Bağlantıyı Test Et
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="fetchTablesFromDb()">
+                      <i class="bi bi-download me-1"></i>Tabloları Getir
+                    </button>
+                  </div>
+                  <div class="col-12"><div id="dbStatus"></div></div>
+                  <div class="col-12"><div id="dbTablesList"></div></div>
+                </div>
+              </div>
+
+              <div class="tab-pane fade" id="tabSettings">
+                <h6 class="panel-title mb-1">Proje Ayarları</h6>
+                <p class="section-subtitle mb-3">Üretilecek projenin temel parametreleri.</p>
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="form-label small">Proje Adı</label>
+                    <input type="text" id="projectName" class="form-control form-control-sm" value="MyApi">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small">Namespace</label>
+                    <input type="text" id="rootNamespace" class="form-control form-control-sm" value="MyApi">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small">DB Provider</label>
+                    <select id="targetDbProvider" class="form-select form-select-sm">
+                      <option value="InMemory">InMemory</option>
+                      <option value="SqlServer">SQL Server</option>
+                      <option value="PostgreSQL">PostgreSQL</option>
+                      <option value="MySQL">MySQL</option>
+                    </select>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small">Framework</label>
+                    <select id="targetFramework" class="form-select form-select-sm">
+                      <option value="net8.0">.NET 8</option>
+                      <option value="net9.0">.NET 9</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <div class="form-check form-check-inline mt-2">
+                      <input class="form-check-input" type="checkbox" id="optSwagger" checked>
+                      <label class="form-check-label small">Swagger</label>
+                    </div>
+                    <div class="form-check form-check-inline mt-2">
+                      <input class="form-check-input" type="checkbox" id="optFluentValidation">
+                      <label class="form-check-label small">FluentValidation</label>
+                    </div>
+                    <div class="form-check form-check-inline mt-2">
+                      <input class="form-check-input" type="checkbox" id="optAutoMapper">
+                      <label class="form-check-label small">AutoMapper</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="generate-wrap">
+            <div class="d-grid">
+              <button class="btn btn-lg btn-success btn-generate" onclick="generateCode()">
+                <i class="bi bi-lightning-charge-fill me-2"></i>Kod Üret
               </button>
             </div>
-            <div id="tablesList"></div>
+            <div class="generate-hint">İpucu: Form alanları otomatik kaydedilir.</div>
           </div>
-
-          <!-- REQUEST/RESPONSE TAB -->
-          <div class="tab-pane fade" id="tabRequests">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="mb-0">Request & Response DTO'ları</h6>
-              <button class="btn btn-sm btn-primary" onclick="addDto()">
-                <i class="bi bi-plus-lg me-1"></i>DTO Ekle
-              </button>
-            </div>
-            <div id="dtoList"></div>
-          </div>
-
-          <!-- DATABASE TAB -->
-          <div class="tab-pane fade" id="tabDatabase">
-            <h6 class="mb-3">Veritabanı Bağlantısı</h6>
-            <div class="row g-2">
-              <div class="col-12">
-                <label class="form-label small">Sağlayıcı</label>
-                <select id="dbProvider" class="form-select form-select-sm">
-                  <option value="postgresql">PostgreSQL</option>
-                  <option value="mssql">SQL Server</option>
-                  <option value="mysql">MySQL</option>
-                </select>
-              </div>
-              <div class="col-8">
-                <label class="form-label small">Host</label>
-                <input type="text" id="dbHost" class="form-control form-control-sm" value="localhost">
-              </div>
-              <div class="col-4">
-                <label class="form-label small">Port</label>
-                <input type="number" id="dbPort" class="form-control form-control-sm" value="5432">
-              </div>
-              <div class="col-12">
-                <label class="form-label small">Veritabanı</label>
-                <input type="text" id="dbName" class="form-control form-control-sm">
-              </div>
-              <div class="col-6">
-                <label class="form-label small">Kullanıcı</label>
-                <input type="text" id="dbUser" class="form-control form-control-sm">
-              </div>
-              <div class="col-6">
-                <label class="form-label small">Şifre</label>
-                <input type="password" id="dbPassword" class="form-control form-control-sm">
-              </div>
-              <div class="col-12 mt-2">
-                <button class="btn btn-sm btn-outline-primary me-2" onclick="testDbConnection()">
-                  <i class="bi bi-plug me-1"></i>Bağlantıyı Test Et
-                </button>
-                <button class="btn btn-sm btn-success" onclick="fetchTablesFromDb()">
-                  <i class="bi bi-download me-1"></i>Tabloları Getir
-                </button>
-              </div>
-              <div class="col-12">
-                <div id="dbStatus"></div>
-              </div>
-              <div class="col-12">
-                <div id="dbTablesList"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- SETTINGS TAB -->
-          <div class="tab-pane fade" id="tabSettings">
-            <h6 class="mb-3">Proje Ayarları</h6>
-            <div class="row g-2">
-              <div class="col-6">
-                <label class="form-label small">Proje Adı</label>
-                <input type="text" id="projectName" class="form-control form-control-sm" value="MyApi">
-              </div>
-              <div class="col-6">
-                <label class="form-label small">Namespace</label>
-                <input type="text" id="rootNamespace" class="form-control form-control-sm" value="MyApi">
-              </div>
-              <div class="col-6">
-                <label class="form-label small">DB Provider</label>
-                <select id="targetDbProvider" class="form-select form-select-sm">
-                  <option value="InMemory">InMemory</option>
-                  <option value="SqlServer">SQL Server</option>
-                  <option value="PostgreSQL">PostgreSQL</option>
-                  <option value="MySQL">MySQL</option>
-                </select>
-              </div>
-              <div class="col-6">
-                <label class="form-label small">Framework</label>
-                <select id="targetFramework" class="form-select form-select-sm">
-                  <option value="net8.0">.NET 8</option>
-                  <option value="net9.0">.NET 9</option>
-                </select>
-              </div>
-              <div class="col-12">
-                <div class="form-check form-check-inline mt-2">
-                  <input class="form-check-input" type="checkbox" id="optSwagger" checked>
-                  <label class="form-check-label small">Swagger</label>
-                </div>
-                <div class="form-check form-check-inline mt-2">
-                  <input class="form-check-input" type="checkbox" id="optFluentValidation">
-                  <label class="form-check-label small">FluentValidation</label>
-                </div>
-                <div class="form-check form-check-inline mt-2">
-                  <input class="form-check-input" type="checkbox" id="optAutoMapper">
-                  <label class="form-check-label small">AutoMapper</label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- GENERATE BUTTON -->
-        <div class="d-grid mt-3">
-          <button class="btn btn-lg btn-success" onclick="generateCode()">
-            <i class="bi bi-lightning-charge-fill me-2"></i>Kod Üret
-          </button>
-        </div>
+        </section>
       </div>
 
-      <!-- RIGHT PANEL: Generated Code -->
       <div class="col-lg-7">
-        <div class="card">
+        <section class="panel result-panel card reveal">
           <div class="card-header bg-dark text-light d-flex justify-content-between align-items-center">
             <span><i class="bi bi-file-earmark-code me-2"></i>Üretilen Kod</span>
-            <div>
-              <button class="btn btn-sm btn-outline-light me-1" onclick="copyCurrentCode()">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-secondary" id="generatedFileCount">0 dosya</span>
+              <button class="btn btn-sm btn-outline-light" onclick="copyCurrentCode()">
                 <i class="bi bi-clipboard me-1"></i>Kopyala
               </button>
               <button class="btn btn-sm btn-outline-light" onclick="downloadAllCode()">
@@ -184,24 +213,22 @@
             </div>
           </div>
           <div class="card-body p-0">
-            <!-- File Tabs -->
             <div class="file-tabs-container border-bottom bg-light">
               <ul class="nav nav-tabs file-tabs" id="fileTabs"></ul>
             </div>
-            <!-- Code Display -->
             <div class="code-container" id="codeContainer">
-              <div class="text-center text-muted py-5">
-                <i class="bi bi-code-slash display-4"></i>
-                <p class="mt-3">Tablo ve alanları tanımlayıp "Kod Üret" butonuna tıklayın</p>
+              <div class="empty-state text-center py-5">
+                <i class="bi bi-code-square display-4"></i>
+                <p class="mt-3 mb-1">Sol panelden tablo/DTO ekleyip üretime başla.</p>
+                <small>Örnek başlangıç için “Örnek Şema Yükle” butonunu kullanabilirsin.</small>
               </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   </div>
 
-  <!-- Table Edit Modal -->
   <div class="modal fade" id="tableModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -248,7 +275,6 @@
     </div>
   </div>
 
-  <!-- DTO Edit Modal -->
   <div class="modal fade" id="dtoModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">

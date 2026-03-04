@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: generatecode-web
+    runtime: node
+    rootDir: web
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true

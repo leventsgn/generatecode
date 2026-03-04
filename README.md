@@ -1,104 +1,100 @@
-# GenerateCode - .NET API Code Generator
+# GenerateCode - Template-based .NET Project Generator
 
-A CLI tool that generates complete .NET 8 Web API projects from a JSON definition file. Define your entities, properties, and controllers in a JSON file, and the tool generates a ready-to-run API project with models, services, controllers, Entity Framework DbContext, and Swagger support.
+GenerateCode is a CLI tool that scaffolds .NET projects from JSON definitions.
+
+It supports both:
+- legacy Web API definition format (`projectName`, `entities`, `controllers`)
+- new template-based format (`template`, `projectName`, `rootNamespace`)
+
+## Supported templates
+
+- `webapi` (existing API generator)
+- `worker`
+- `console`
+- `library`
 
 ## Features
 
-- Generates .NET 8 Web API projects from JSON definitions
-- Automatic CRUD controller, service, and model generation
-- Entity Framework Core integration (InMemory or SQL Server)
-- Data annotation attributes (Key, Required, MaxLength)
-- Swagger/OpenAPI documentation support
-- Custom endpoint definitions
-
-## Project Structure
-
-```
-src/GenerateCode/
-  ├── Models/              # API definition models
-  │   ├── ApiDefinition.cs
-  │   ├── EntityDefinition.cs
-  │   ├── PropertyDefinition.cs
-  │   ├── ControllerDefinition.cs
-  │   └── EndpointDefinition.cs
-  ├── Generators/           # Code generation templates
-  │   ├── ICodeGenerator.cs
-  │   ├── ModelGenerator.cs
-  │   ├── ServiceGenerator.cs
-  │   ├── ControllerGenerator.cs
-  │   ├── DbContextGenerator.cs
-  │   ├── ProgramFileGenerator.cs
-  │   └── ProjectFileGenerator.cs
-  ├── Engine/
-  │   └── ApiProjectGenerator.cs
-  └── Program.cs
-tests/GenerateCode.Tests/  # Unit tests
-samples/                   # Sample API definitions
-```
+- Deterministic code generation from JSON
+- Definition validation before file write
+- Preview / dry-run mode
+- Safe file writing with overwrite strategy (`Overwrite`, `Skip`, `Error`)
+- Optional smoke build (`dotnet build`) after generation
 
 ## Usage
 
 ```bash
-dotnet run --project src/GenerateCode -- <input-file> [output-directory]
+dotnet run --project src/GenerateCode -- <input-file> [output-directory] [options]
 ```
 
-### Example
+Options:
+
+- `--template <name>`: override template from input file
+- `--output <path>`: output directory (alternative to positional output arg)
+- `--overwrite <mode>`: `Overwrite`, `Skip`, or `Error`
+- `--preview`: print generated file list before writing
+- `--dry-run`: validate and render file list only (no writes)
+- `--smoke-build`: run `dotnet build` in generated project
+
+## Examples
+
+Generate a Web API from legacy definition:
 
 ```bash
-dotnet run --project src/GenerateCode -- samples/petstore-api.json ./output
+dotnet run --project src/GenerateCode -- samples/petstore-api.json ./output --template webapi
 ```
 
-This generates a complete API project at `./output/PetStoreApi/` with:
-- Pet, Owner, and Appointment models with data annotations
-- CRUD services for each entity
-- REST controllers with GET, POST, PUT, DELETE endpoints
-- Entity Framework InMemory database context
-- Program.cs with Swagger and DI configuration
+Generate a Worker Service:
 
-## API Definition Format
+```bash
+dotnet run --project src/GenerateCode -- samples/worker-service.json ./output --smoke-build
+```
+
+## Definition format
+
+Legacy Web API format (still supported):
 
 ```json
 {
   "projectName": "MyApi",
   "rootNamespace": "MyApi",
   "databaseProvider": "InMemory",
-  "entities": [
-    {
-      "name": "Product",
-      "generateCrud": true,
-      "properties": [
-        { "name": "Id", "type": "int", "isKey": true },
-        { "name": "Name", "type": "string", "isRequired": true, "maxLength": 100 },
-        { "name": "Price", "type": "decimal" }
-      ]
-    }
-  ],
+  "entities": [],
   "controllers": []
 }
 ```
 
-### Definition Fields
+Template-based format:
 
-| Field | Description |
-|-------|-------------|
-| `projectName` | Name of the generated project |
-| `rootNamespace` | Root C# namespace |
-| `databaseProvider` | `InMemory` or `SqlServer` |
-| `entities` | List of entity definitions |
-| `controllers` | Custom controller definitions (optional) |
-
-### Property Types
-
-Supported types: `int`, `string`, `bool`, `decimal`, `double`, `float`, `DateTime`, `Guid`, and any custom type.
-
-## Building
-
-```bash
-dotnet build
+```json
+{
+  "template": "worker",
+  "projectName": "MyWorker",
+  "rootNamespace": "MyWorker",
+  "targetFramework": "net8.0"
+}
 ```
 
-## Testing
+## Development
+
+Build:
 
 ```bash
-dotnet test
+dotnet build src/GenerateCode/GenerateCode.csproj
 ```
+
+Test:
+
+```bash
+dotnet test tests/GenerateCode.Tests/GenerateCode.Tests.csproj
+```
+
+## Render deployment (Web UI)
+
+Repository includes [`render.yaml`](./render.yaml) for one-click deploy of the `web` app.
+
+- Service type: `Web Service`
+- Root directory: `web`
+- Build command: `npm ci`
+- Start command: `npm start`
+- Health check path: `/health`
