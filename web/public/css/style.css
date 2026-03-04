@@ -303,6 +303,12 @@ body {
   font-size: 12px;
 }
 
+#tablesList,
+#dtoList,
+#dbTablesList {
+  background: transparent;
+}
+
 .badge-request {
   background-color: #0e639c;
 }
@@ -438,6 +444,16 @@ select:-webkit-autofill:focus {
   color: var(--vsc-text-muted);
 }
 
+.form-check-input {
+  background-color: #1f1f22;
+  border-color: #5d5d66;
+}
+
+.form-check-input:checked {
+  background-color: var(--vsc-accent);
+  border-color: #1177bb;
+}
+
 .btn-outline-dark,
 .btn-outline-light,
 .btn-outline-primary,
@@ -533,6 +549,32 @@ select:-webkit-autofill:focus {
 .table {
   color: var(--vsc-text);
   border-color: var(--vsc-border);
+  --bs-table-bg: #2a2a2d;
+  --bs-table-color: #d6d6d6;
+  --bs-table-border-color: var(--vsc-border);
+}
+
+.table > :not(caption) > * > * {
+  background: #2a2a2d !important;
+  color: #d6d6d6 !important;
+  border-bottom-color: var(--vsc-border) !important;
+}
+
+.table tbody tr:nth-child(even) > * {
+  background: #2f2f34 !important;
+}
+
+.table tbody tr:hover > * {
+  background: #35353b !important;
+}
+
+.table thead th {
+  background: #34343a !important;
+  color: #dedede !important;
+}
+
+.table-bordered > :not(caption) > * {
+  border-color: var(--vsc-border) !important;
 }
 
 .alert {

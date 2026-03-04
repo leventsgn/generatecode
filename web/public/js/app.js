@@ -94,6 +94,13 @@ function getProjectRootName(files) {
   return root || 'ImportedProject';
 }
 
+function getLlmRuntimeConfig() {
+  const baseUrl = document.getElementById('llmBaseUrl')?.value?.trim() || '';
+  const model = document.getElementById('llmModel')?.value?.trim() || '';
+  const apiKey = document.getElementById('llmApiKey')?.value?.trim() || '';
+  return { baseUrl, model, apiKey };
+}
+
 function getConfigSnapshot() {
   return {
     projectName: document.getElementById('projectName').value || 'MyApi',
@@ -109,6 +116,9 @@ function getConfigSnapshot() {
     dbName: document.getElementById('dbName').value,
     dbUser: document.getElementById('dbUser').value,
     dbPassword: document.getElementById('dbPassword').value,
+    llmBaseUrl: document.getElementById('llmBaseUrl')?.value || 'https://api.groq.com/openai/v1',
+    llmModel: document.getElementById('llmModel')?.value || 'openai/gpt-oss-120b',
+    llmApiKey: document.getElementById('llmApiKey')?.value || '',
     selectedStandardId: state.selectedStandardId || ''
   };
 }
@@ -128,6 +138,9 @@ function applyConfigSnapshot(snapshot = {}) {
     dbName: '',
     dbUser: '',
     dbPassword: '',
+    llmBaseUrl: 'https://api.groq.com/openai/v1',
+    llmModel: 'openai/gpt-oss-120b',
+    llmApiKey: '',
     selectedStandardId: ''
   };
 
@@ -145,6 +158,12 @@ function applyConfigSnapshot(snapshot = {}) {
   document.getElementById('dbName').value = cfg.dbName;
   document.getElementById('dbUser').value = cfg.dbUser;
   document.getElementById('dbPassword').value = cfg.dbPassword;
+  const llmBaseUrlInput = document.getElementById('llmBaseUrl');
+  const llmModelInput = document.getElementById('llmModel');
+  const llmApiKeyInput = document.getElementById('llmApiKey');
+  if (llmBaseUrlInput) llmBaseUrlInput.value = cfg.llmBaseUrl;
+  if (llmModelInput) llmModelInput.value = cfg.llmModel;
+  if (llmApiKeyInput) llmApiKeyInput.value = cfg.llmApiKey;
   state.selectedStandardId = cfg.selectedStandardId || '';
 }
 
@@ -473,6 +492,13 @@ async function syncLlmStatus() {
   const button = document.getElementById('enhanceStandardWithLlmBtn');
   if (!button) return;
 
+  const runtime = getLlmRuntimeConfig();
+  if (runtime.apiKey) {
+    button.disabled = false;
+    button.title = `LLM model: ${runtime.model || 'openai/gpt-oss-120b'} (ekran ayari)`;
+    return;
+  }
+
   try {
     const response = await fetch('/api/llm/status');
     const data = await response.json();
@@ -483,13 +509,14 @@ async function syncLlmStatus() {
 
     if (!data.configured) {
       button.disabled = true;
-      button.title = 'GROQ_API_KEY serverda tanimli degil.';
+      button.title = 'LLM token girin veya server env de GROQ_API_KEY tanimlayin.';
       return;
     }
 
     button.disabled = false;
-    button.title = `LLM model: ${data.model}`;
+    button.title = `LLM model: ${data.model} (server env)`;
   } catch {
+    button.disabled = true;
     button.title = 'LLM durumu okunamadi.';
   }
 }
@@ -516,10 +543,11 @@ async function enhanceSelectedStandardWithLlm() {
   button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>LLM isliyor...';
 
   try {
+    const llmConfig = getLlmRuntimeConfig();
     const response = await fetch('/api/llm/enhance-standard', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ standard })
+      body: JSON.stringify({ standard, llmConfig })
     });
 
     const data = await response.json();
@@ -1182,13 +1210,18 @@ function bindAutoSaveEvents() {
     'projectName', 'rootNamespace', 'targetDbProvider', 'targetFramework',
     'optSwagger', 'optFluentValidation', 'optAutoMapper',
     'dbProvider', 'dbHost', 'dbPort', 'dbName', 'dbUser', 'dbPassword',
-    'activeStandardSelect'
+    'activeStandardSelect',
+    'llmBaseUrl', 'llmModel', 'llmApiKey'
   ];
 
   ids.forEach(id => {
     const element = document.getElementById(id);
+    if (!element) return;
     const eventName = element.type === 'checkbox' || element.tagName === 'SELECT' ? 'change' : 'input';
     element.addEventListener(eventName, persistWorkspace);
+    if (id.startsWith('llm')) {
+      element.addEventListener(eventName, syncLlmStatus);
+    }
   });
 }
 

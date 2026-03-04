@@ -206,6 +206,22 @@
                     </select>
                     <small class="text-muted">Secilen standart, kod uretiminde adlandirma ve altyapi tercihlerini etkiler.</small>
                   </div>
+                  <div class="col-12 mt-2">
+                    <h6 class="panel-title mb-1">LLM Ayarlari</h6>
+                    <p class="section-subtitle mb-2">Ekrandan girilen degerler sunucu env ayarlarini ezer.</p>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small">LLM Base URL</label>
+                    <input type="text" id="llmBaseUrl" class="form-control form-control-sm" value="https://api.groq.com/openai/v1" placeholder="https://api.groq.com/openai/v1">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small">LLM Model</label>
+                    <input type="text" id="llmModel" class="form-control form-control-sm" value="openai/gpt-oss-120b" placeholder="openai/gpt-oss-120b">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small">LLM Token</label>
+                    <input type="password" id="llmApiKey" class="form-control form-control-sm" placeholder="gsk_...">
+                  </div>
                   <div class="col-6">
                     <label class="form-label small">Proje Adi</label>
                     <input type="text" id="projectName" class="form-control form-control-sm" value="MyApi">
@@ -275,7 +291,7 @@
             </div>
           </div>
           <div class="card-body p-0">
-            <div class="file-tabs-container border-bottom bg-light">
+            <div class="file-tabs-container border-bottom">
               <ul class="nav nav-tabs file-tabs" id="fileTabs"></ul>
             </div>
             <div class="code-container" id="codeContainer">
