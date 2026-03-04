@@ -103,6 +103,7 @@ function getLlmRuntimeConfig() {
 
 function getConfigSnapshot() {
   return {
+    projectType: document.getElementById('projectType')?.value || 'webapi',
     projectName: document.getElementById('projectName').value || 'MyApi',
     rootNamespace: document.getElementById('rootNamespace').value || 'MyApi',
     targetDbProvider: document.getElementById('targetDbProvider').value,
@@ -110,6 +111,11 @@ function getConfigSnapshot() {
     optSwagger: document.getElementById('optSwagger').checked,
     optFluentValidation: document.getElementById('optFluentValidation').checked,
     optAutoMapper: document.getElementById('optAutoMapper').checked,
+    optAuthPack: document.getElementById('optAuthPack')?.checked || false,
+    optProductionPack: document.getElementById('optProductionPack')?.checked || false,
+    optTestGeneration: document.getElementById('optTestGeneration')?.checked || false,
+    optEfMigrations: document.getElementById('optEfMigrations')?.checked || false,
+    optPostmanExport: document.getElementById('optPostmanExport')?.checked || false,
     dbProvider: document.getElementById('dbProvider').value,
     dbHost: document.getElementById('dbHost').value,
     dbPort: document.getElementById('dbPort').value,
@@ -125,6 +131,7 @@ function getConfigSnapshot() {
 
 function applyConfigSnapshot(snapshot = {}) {
   const defaults = {
+    projectType: 'webapi',
     projectName: 'MyApi',
     rootNamespace: 'MyApi',
     targetDbProvider: 'InMemory',
@@ -132,6 +139,11 @@ function applyConfigSnapshot(snapshot = {}) {
     optSwagger: true,
     optFluentValidation: false,
     optAutoMapper: false,
+    optAuthPack: false,
+    optProductionPack: false,
+    optTestGeneration: false,
+    optEfMigrations: false,
+    optPostmanExport: false,
     dbProvider: 'postgresql',
     dbHost: 'localhost',
     dbPort: '5432',
@@ -145,6 +157,8 @@ function applyConfigSnapshot(snapshot = {}) {
   };
 
   const cfg = { ...defaults, ...snapshot };
+  const projectTypeInput = document.getElementById('projectType');
+  if (projectTypeInput) projectTypeInput.value = cfg.projectType;
   document.getElementById('projectName').value = cfg.projectName;
   document.getElementById('rootNamespace').value = cfg.rootNamespace;
   document.getElementById('targetDbProvider').value = cfg.targetDbProvider;
@@ -152,6 +166,16 @@ function applyConfigSnapshot(snapshot = {}) {
   document.getElementById('optSwagger').checked = cfg.optSwagger;
   document.getElementById('optFluentValidation').checked = cfg.optFluentValidation;
   document.getElementById('optAutoMapper').checked = cfg.optAutoMapper;
+  const optAuthPack = document.getElementById('optAuthPack');
+  const optProductionPack = document.getElementById('optProductionPack');
+  const optTestGeneration = document.getElementById('optTestGeneration');
+  const optEfMigrations = document.getElementById('optEfMigrations');
+  const optPostmanExport = document.getElementById('optPostmanExport');
+  if (optAuthPack) optAuthPack.checked = cfg.optAuthPack;
+  if (optProductionPack) optProductionPack.checked = cfg.optProductionPack;
+  if (optTestGeneration) optTestGeneration.checked = cfg.optTestGeneration;
+  if (optEfMigrations) optEfMigrations.checked = cfg.optEfMigrations;
+  if (optPostmanExport) optPostmanExport.checked = cfg.optPostmanExport;
   document.getElementById('dbProvider').value = cfg.dbProvider;
   document.getElementById('dbHost').value = cfg.dbHost;
   document.getElementById('dbPort').value = cfg.dbPort;
@@ -198,12 +222,18 @@ function restoreWorkspace() {
 function clearGeneratedView() {
   state.generatedFiles = {};
   state.currentFile = null;
-  document.getElementById('fileTabs').innerHTML = '';
+  const explorer = document.getElementById('fileExplorer');
+  if (explorer) {
+    explorer.innerHTML = `
+      <div class="explorer-header">DOSYALAR</div>
+      <div class="file-explorer-empty">Henuz uretilmis dosya yok.</div>
+    `;
+  }
   document.getElementById('codeContainer').innerHTML = `
     <div class="empty-state text-center py-5">
       <i class="bi bi-code-square display-4"></i>
-      <p class="mt-3 mb-1">Sol panelden tablo/DTO ekleyip üretime başla.</p>
-      <small>Örnek başlangıç için “Örnek Şema Yükle” butonunu kullanabilirsin.</small>
+      <p class="mt-3 mb-1">Sol panelden tablo/DTO ekleyip ÃƒÂ¼retime baÃ…Å¸la.</p>
+      <small>Ãƒâ€“rnek baÃ…Å¸langÃ„Â±ÃƒÂ§ iÃƒÂ§in Ã¢â‚¬Å“Ãƒâ€“rnek Ã…Âema YÃƒÂ¼kleÃ¢â‚¬Â butonunu kullanabilirsin.</small>
     </div>
   `;
 }
@@ -213,6 +243,35 @@ function updateStats() {
   document.getElementById('statDtos').textContent = String(state.dtos.length);
   document.getElementById('statFiles').textContent = String(Object.keys(state.generatedFiles).length);
   document.getElementById('generatedFileCount').textContent = `${Object.keys(state.generatedFiles).length} dosya`;
+}
+
+function openConfigTab(tabTarget) {
+  const normalizedTarget = String(tabTarget || '').startsWith('#') ? String(tabTarget) : `#${String(tabTarget || '')}`;
+  const trigger = document.querySelector(`#configTabs .nav-link[data-bs-target="${normalizedTarget}"]`);
+  if (!trigger) return;
+  bootstrap.Tab.getOrCreateInstance(trigger).show();
+}
+
+function updateWorkflowSteps() {
+  const activeTab = document.querySelector('#configTabs .nav-link.active');
+  const activeTarget = activeTab?.getAttribute('data-bs-target') || '';
+  document.querySelectorAll('.workflow-step').forEach(step => {
+    step.classList.toggle('active', step.dataset.target === activeTarget);
+  });
+}
+
+function setLlmConfigHint(message, tone = 'muted') {
+  const hint = document.getElementById('llmConfigHint');
+  if (!hint) return;
+  hint.classList.remove('text-muted', 'text-success', 'text-warning', 'text-danger');
+  const toneMap = {
+    muted: 'text-muted',
+    success: 'text-success',
+    warning: 'text-warning',
+    danger: 'text-danger'
+  };
+  hint.classList.add(toneMap[tone] || 'text-muted');
+  hint.textContent = message;
 }
 
 // ==================== STANDARDS ====================
@@ -496,6 +555,7 @@ async function syncLlmStatus() {
   if (runtime.apiKey) {
     button.disabled = false;
     button.title = `LLM model: ${runtime.model || 'openai/gpt-oss-120b'} (ekran ayari)`;
+    setLlmConfigHint('Ekran tokeni aktif. LLM cagrilari bu token ile yapilacak.', 'success');
     return;
   }
 
@@ -510,14 +570,17 @@ async function syncLlmStatus() {
     if (!data.configured) {
       button.disabled = true;
       button.title = 'LLM token girin veya server env de GROQ_API_KEY tanimlayin.';
+      setLlmConfigHint('Token girin veya server env icinde GROQ_API_KEY tanimlayin.', 'warning');
       return;
     }
 
     button.disabled = false;
     button.title = `LLM model: ${data.model} (server env)`;
+    setLlmConfigHint('Server env tokeni aktif. Istersen ekrandan override edebilirsin.', 'muted');
   } catch {
     button.disabled = true;
     button.title = 'LLM durumu okunamadi.';
+    setLlmConfigHint('LLM status okunamadi. URL/token degerlerini kontrol et.', 'danger');
   }
 }
 
@@ -604,7 +667,7 @@ function editTable(index) {
   state.editingTableIndex = index;
   const table = state.tables[index];
 
-  document.getElementById('tableModalTitle').textContent = `Tablo Düzenle: ${table.name}`;
+  document.getElementById('tableModalTitle').textContent = `Tablo DÃƒÂ¼zenle: ${table.name}`;
   document.getElementById('modalTableName').value = table.name;
   document.getElementById('modalGenCrud').checked = table.generateCrud;
   document.getElementById('modalColumnsBody').innerHTML = '';
@@ -646,7 +709,7 @@ function addColumnToModal(name = '', type = 'string', isPk = false, isReq = fals
 function saveTable() {
   const name = document.getElementById('modalTableName').value.trim();
   if (!name) {
-    alert('Tablo adı zorunlu.');
+    alert('Tablo adÃ„Â± zorunlu.');
     return;
   }
 
@@ -665,7 +728,7 @@ function saveTable() {
   });
 
   if (columns.length === 0) {
-    alert('En az bir sütun ekleyin.');
+    alert('En az bir sÃƒÂ¼tun ekleyin.');
     return;
   }
 
@@ -688,7 +751,7 @@ function saveTable() {
 }
 
 function deleteTable(index) {
-  if (!confirm(`"${state.tables[index].name}" tablosunu silmek istediğinize emin misiniz?`)) {
+  if (!confirm(`"${state.tables[index].name}" tablosunu silmek istediÃ„Å¸inize emin misiniz?`)) {
     return;
   }
   state.tables.splice(index, 1);
@@ -702,13 +765,13 @@ function renderTables() {
   const list = state.tables.filter(table => table.name.toLowerCase().includes(search));
 
   if (state.tables.length === 0) {
-    container.innerHTML = '<div class="text-muted text-center py-3"><small>Henüz tablo eklenmedi. "Tablo Ekle" butonuna tıklayın veya veritabanından içe aktarın.</small></div>';
+    container.innerHTML = '<div class="text-muted text-center py-3"><small>HenÃƒÂ¼z tablo eklenmedi. "Tablo Ekle" butonuna tÃ„Â±klayÃ„Â±n veya veritabanÃ„Â±ndan iÃƒÂ§e aktarÃ„Â±n.</small></div>';
     updateStats();
     return;
   }
 
   if (list.length === 0) {
-    container.innerHTML = '<div class="text-muted text-center py-3"><small>Aramaya uygun tablo bulunamadı.</small></div>';
+    container.innerHTML = '<div class="text-muted text-center py-3"><small>Aramaya uygun tablo bulunamadÃ„Â±.</small></div>';
     updateStats();
     return;
   }
@@ -719,7 +782,7 @@ function renderTables() {
       <div class="table-card d-flex justify-content-between align-items-center" onclick="editTable(${index})">
         <div>
           <div class="table-name"><i class="bi bi-table me-1"></i>${escapeHtml(table.name)}</div>
-          <div class="table-info">${table.columns.length} sütun ${table.generateCrud ? '• CRUD' : ''}</div>
+          <div class="table-info">${table.columns.length} sÃƒÂ¼tun ${table.generateCrud ? 'Ã¢â‚¬Â¢ CRUD' : ''}</div>
         </div>
         <div>
           <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteTable(${index})">
@@ -749,7 +812,7 @@ function editDto(index) {
   state.editingDtoIndex = index;
   const dto = state.dtos[index];
 
-  document.getElementById('dtoModalTitle').textContent = `DTO Düzenle: ${dto.name}`;
+  document.getElementById('dtoModalTitle').textContent = `DTO DÃƒÂ¼zenle: ${dto.name}`;
   document.getElementById('modalDtoName').value = dto.name;
   document.getElementById('modalDtoType').value = dto.type;
   document.getElementById('modalDtoFieldsBody').innerHTML = '';
@@ -785,7 +848,7 @@ function addDtoFieldToModal(name = '', type = 'string', isReq = false, maxLen = 
 function saveDto() {
   const name = document.getElementById('modalDtoName').value.trim();
   if (!name) {
-    alert('DTO adı zorunlu.');
+    alert('DTO adÃ„Â± zorunlu.');
     return;
   }
 
@@ -825,7 +888,7 @@ function saveDto() {
 }
 
 function deleteDto(index) {
-  if (!confirm(`"${state.dtos[index].name}" DTO kaydını silmek istediğinize emin misiniz?`)) {
+  if (!confirm(`"${state.dtos[index].name}" DTO kaydÃ„Â±nÃ„Â± silmek istediÃ„Å¸inize emin misiniz?`)) {
     return;
   }
   state.dtos.splice(index, 1);
@@ -839,13 +902,13 @@ function renderDtos() {
   const list = state.dtos.filter(dto => dto.name.toLowerCase().includes(search));
 
   if (state.dtos.length === 0) {
-    container.innerHTML = '<div class="text-muted text-center py-3"><small>Henüz DTO eklenmedi. "DTO Ekle" butonuna tıklayın.</small></div>';
+    container.innerHTML = '<div class="text-muted text-center py-3"><small>HenÃƒÂ¼z DTO eklenmedi. "DTO Ekle" butonuna tÃ„Â±klayÃ„Â±n.</small></div>';
     updateStats();
     return;
   }
 
   if (list.length === 0) {
-    container.innerHTML = '<div class="text-muted text-center py-3"><small>Aramaya uygun DTO bulunamadı.</small></div>';
+    container.innerHTML = '<div class="text-muted text-center py-3"><small>Aramaya uygun DTO bulunamadÃ„Â±.</small></div>';
     updateStats();
     return;
   }
@@ -888,7 +951,7 @@ function getDbConfig() {
 
 async function testDbConnection() {
   const status = document.getElementById('dbStatus');
-  status.innerHTML = '<div class="alert alert-info py-1 mt-2 small"><i class="bi bi-hourglass-split me-1"></i>Bağlanılıyor...</div>';
+  status.innerHTML = '<div class="alert alert-info py-1 mt-2 small"><i class="bi bi-hourglass-split me-1"></i>BaÃ„Å¸lanÃ„Â±lÃ„Â±yor...</div>';
 
   try {
     const resp = await fetch('/api/database/test-connection', {
@@ -904,7 +967,7 @@ async function testDbConnection() {
       status.innerHTML = `<div class="alert alert-danger py-1 mt-2 small"><i class="bi bi-x-circle me-1"></i>${escapeHtml(data.message)}</div>`;
     }
   } catch (err) {
-    status.innerHTML = `<div class="alert alert-danger py-1 mt-2 small"><i class="bi bi-x-circle me-1"></i>Bağlantı hatası: ${escapeHtml(err.message)}</div>`;
+    status.innerHTML = `<div class="alert alert-danger py-1 mt-2 small"><i class="bi bi-x-circle me-1"></i>BaÃ„Å¸lantÃ„Â± hatasÃ„Â±: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -927,9 +990,9 @@ async function fetchTablesFromDb() {
       list.innerHTML = `
         <div class="mt-2">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <small class="fw-bold">İçe aktarılacak tablolar:</small>
+            <small class="fw-bold">Ã„Â°ÃƒÂ§e aktarÃ„Â±lacak tablolar:</small>
             <button class="btn btn-sm btn-success" onclick="importSelectedTables()">
-              <i class="bi bi-download me-1"></i>İçe Aktar
+              <i class="bi bi-download me-1"></i>Ã„Â°ÃƒÂ§e Aktar
             </button>
           </div>
           ${data.tables.map(tableName => `
@@ -941,7 +1004,7 @@ async function fetchTablesFromDb() {
         </div>
       `;
     } else if (data.success) {
-      status.innerHTML = '<div class="alert alert-warning py-1 mt-2 small">Tablo bulunamadı.</div>';
+      status.innerHTML = '<div class="alert alert-warning py-1 mt-2 small">Tablo bulunamadÃ„Â±.</div>';
     } else {
       status.innerHTML = `<div class="alert alert-danger py-1 mt-2 small">${escapeHtml(data.message)}</div>`;
     }
@@ -956,11 +1019,11 @@ async function importSelectedTables() {
   const status = document.getElementById('dbStatus');
 
   if (checked.length === 0) {
-    status.innerHTML = '<div class="alert alert-warning py-1 mt-2 small">Lütfen en az bir tablo seçin.</div>';
+    status.innerHTML = '<div class="alert alert-warning py-1 mt-2 small">LÃƒÂ¼tfen en az bir tablo seÃƒÂ§in.</div>';
     return;
   }
 
-  status.innerHTML = '<div class="alert alert-info py-1 mt-2 small"><i class="bi bi-hourglass-split me-1"></i>Sütunlar getiriliyor...</div>';
+  status.innerHTML = '<div class="alert alert-info py-1 mt-2 small"><i class="bi bi-hourglass-split me-1"></i>SÃƒÂ¼tunlar getiriliyor...</div>';
 
   for (const cb of checked) {
     const tableName = cb.value;
@@ -1000,21 +1063,23 @@ async function importSelectedTables() {
 
   renderTables();
   persistWorkspace();
-  status.innerHTML = `<div class="alert alert-success py-1 mt-2 small"><i class="bi bi-check-circle me-1"></i>${checked.length} tablo içe aktarıldı.</div>`;
+  status.innerHTML = `<div class="alert alert-success py-1 mt-2 small"><i class="bi bi-check-circle me-1"></i>${checked.length} tablo iÃƒÂ§e aktarÃ„Â±ldÃ„Â±.</div>`;
   document.querySelector('[data-bs-target="#tabTables"]').click();
 }
 
 // ==================== CODE GENERATION ====================
 
 function generateCode() {
-  if (state.tables.length === 0) {
-    alert('Lütfen en az bir tablo ekleyin.');
+  const projectType = document.getElementById('projectType')?.value || 'webapi';
+  if (projectType === 'webapi' && state.tables.length === 0) {
+    alert('Lutfen en az bir tablo ekleyin.');
     return;
   }
 
   const standardProfile = getActiveStandardProfile();
 
   const config = {
+    projectType,
     projectName: document.getElementById('projectName').value || 'MyApi',
     rootNamespace: document.getElementById('rootNamespace').value || 'MyApi',
     targetDbProvider: document.getElementById('targetDbProvider').value,
@@ -1022,6 +1087,11 @@ function generateCode() {
     optSwagger: document.getElementById('optSwagger').checked,
     optFluentValidation: document.getElementById('optFluentValidation').checked,
     optAutoMapper: document.getElementById('optAutoMapper').checked,
+    optAuthPack: document.getElementById('optAuthPack')?.checked || false,
+    optProductionPack: document.getElementById('optProductionPack')?.checked || false,
+    optTestGeneration: document.getElementById('optTestGeneration')?.checked || false,
+    optEfMigrations: document.getElementById('optEfMigrations')?.checked || false,
+    optPostmanExport: document.getElementById('optPostmanExport')?.checked || false,
     tables: state.tables,
     dtos: state.dtos,
     standardProfile
@@ -1031,15 +1101,14 @@ function generateCode() {
   renderGeneratedCode();
   persistWorkspace();
   if (standardProfile) {
-    showToast(`${Object.keys(state.generatedFiles).length} dosya hazırlandı (${standardProfile.name} standardı).`);
+    showToast(`${Object.keys(state.generatedFiles).length} dosya hazirlandi (${standardProfile.name} standardi).`);
   } else {
-    showToast(`${Object.keys(state.generatedFiles).length} dosya hazırlandı.`);
+    showToast(`${Object.keys(state.generatedFiles).length} dosya hazirlandi.`);
   }
 }
 
 function renderGeneratedCode() {
   const files = Object.keys(state.generatedFiles);
-  const tabsContainer = document.getElementById('fileTabs');
 
   if (files.length === 0) {
     clearGeneratedView();
@@ -1047,24 +1116,186 @@ function renderGeneratedCode() {
     return;
   }
 
-  tabsContainer.innerHTML = files.map((file, i) => `
-    <li class="nav-item">
-      <button class="nav-link ${i === 0 ? 'active' : ''}" onclick="showFile('${file}', this)">
-        <i class="bi ${getFileIcon(file)} me-1"></i>${file.split('/').pop()}
-      </button>
-    </li>
-  `).join('');
+  if (!state.currentFile || !state.generatedFiles[state.currentFile]) {
+    state.currentFile = files[0];
+  }
 
-  state.currentFile = files[0];
-  showFileContent(files[0]);
+  renderFileExplorer(files);
+  showFileContent(state.currentFile);
+  updateExplorerSelection();
   updateStats();
 }
 
-function showFile(filename, btn) {
+function buildFileTree(filePaths) {
+  const root = { type: 'folder', name: '', path: '', children: [], folders: new Map() };
+
+  filePaths.forEach(filePath => {
+    const parts = filePath.split('/').filter(Boolean);
+    let cursor = root;
+    const folderStack = [];
+
+    parts.forEach((part, index) => {
+      const isFile = index === parts.length - 1;
+      if (isFile) {
+        cursor.children.push({ type: 'file', name: part, path: filePath });
+        return;
+      }
+
+      folderStack.push(part);
+      if (!cursor.folders.has(part)) {
+        const folderNode = {
+          type: 'folder',
+          name: part,
+          path: folderStack.join('/'),
+          children: [],
+          folders: new Map()
+        };
+        cursor.folders.set(part, folderNode);
+        cursor.children.push(folderNode);
+      }
+      cursor = cursor.folders.get(part);
+    });
+  });
+
+  const sortNodes = node => {
+    node.children.sort((left, right) => {
+      if (left.type !== right.type) {
+        return left.type === 'folder' ? -1 : 1;
+      }
+      return left.name.localeCompare(right.name, 'tr', { sensitivity: 'base' });
+    });
+    node.children.forEach(child => {
+      if (child.type === 'folder') {
+        sortNodes(child);
+        delete child.folders;
+      }
+    });
+  };
+
+  sortNodes(root);
+  delete root.folders;
+  return root;
+}
+
+function createExplorerNode(node, depth = 0) {
+  if (node.type === 'file') {
+    const fileButton = document.createElement('button');
+    fileButton.type = 'button';
+    fileButton.className = 'explorer-item explorer-file';
+    fileButton.style.setProperty('--depth', String(depth));
+    fileButton.dataset.path = node.path;
+
+    const icon = document.createElement('i');
+    icon.className = `bi ${getFileIcon(node.path)} explorer-node-icon`;
+
+    const label = document.createElement('span');
+    label.className = 'explorer-label';
+    label.textContent = node.name;
+
+    fileButton.appendChild(icon);
+    fileButton.appendChild(label);
+    return fileButton;
+  }
+
+  const folderWrapper = document.createElement('div');
+  folderWrapper.className = 'explorer-folder';
+  folderWrapper.dataset.path = node.path;
+
+  const folderButton = document.createElement('button');
+  folderButton.type = 'button';
+  folderButton.className = 'explorer-item explorer-folder-toggle';
+  folderButton.style.setProperty('--depth', String(depth));
+  folderButton.dataset.path = node.path;
+
+  const caret = document.createElement('i');
+  caret.className = 'bi bi-chevron-down explorer-caret';
+
+  const folderIcon = document.createElement('i');
+  folderIcon.className = 'bi bi-folder2-open explorer-node-icon';
+
+  const label = document.createElement('span');
+  label.className = 'explorer-label';
+  label.textContent = node.name;
+
+  folderButton.appendChild(caret);
+  folderButton.appendChild(folderIcon);
+  folderButton.appendChild(label);
+
+  const children = document.createElement('div');
+  children.className = 'explorer-children';
+  node.children.forEach(child => {
+    children.appendChild(createExplorerNode(child, depth + 1));
+  });
+
+  folderWrapper.appendChild(folderButton);
+  folderWrapper.appendChild(children);
+  return folderWrapper;
+}
+
+function updateExplorerSelection() {
+  document.querySelectorAll('#fileExplorer .explorer-file').forEach(fileButton => {
+    fileButton.classList.toggle('active', fileButton.dataset.path === state.currentFile);
+  });
+}
+
+function bindExplorerInteractions() {
+  const explorer = document.getElementById('fileExplorer');
+  if (!explorer) return;
+
+  explorer.querySelectorAll('.explorer-file').forEach(fileButton => {
+    fileButton.addEventListener('click', () => {
+      state.currentFile = fileButton.dataset.path;
+      showFileContent(state.currentFile);
+      updateExplorerSelection();
+    });
+  });
+
+  explorer.querySelectorAll('.explorer-folder-toggle').forEach(folderButton => {
+    folderButton.addEventListener('click', () => {
+      const folder = folderButton.closest('.explorer-folder');
+      if (!folder) return;
+      folder.classList.toggle('collapsed');
+      const collapsed = folder.classList.contains('collapsed');
+      const caret = folderButton.querySelector('.explorer-caret');
+      const folderIcon = folderButton.querySelector('.explorer-node-icon');
+      if (caret) {
+        caret.className = `bi ${collapsed ? 'bi-chevron-right' : 'bi-chevron-down'} explorer-caret`;
+      }
+      if (folderIcon) {
+        folderIcon.className = `bi ${collapsed ? 'bi-folder2' : 'bi-folder2-open'} explorer-node-icon`;
+      }
+    });
+  });
+}
+
+function renderFileExplorer(filePaths) {
+  const explorer = document.getElementById('fileExplorer');
+  if (!explorer) return;
+
+  explorer.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.className = 'explorer-header';
+  header.textContent = 'DOSYALAR';
+  explorer.appendChild(header);
+
+  const treeHost = document.createElement('div');
+  treeHost.className = 'explorer-tree';
+
+  const tree = buildFileTree(filePaths);
+  tree.children.forEach(node => {
+    treeHost.appendChild(createExplorerNode(node, 0));
+  });
+
+  explorer.appendChild(treeHost);
+  bindExplorerInteractions();
+}
+
+function showFile(filename) {
+  if (!filename || !state.generatedFiles[filename]) return;
   state.currentFile = filename;
-  document.querySelectorAll('#fileTabs .nav-link').forEach(tabBtn => tabBtn.classList.remove('active'));
-  btn.classList.add('active');
   showFileContent(filename);
+  updateExplorerSelection();
 }
 
 function showFileContent(filename) {
@@ -1087,7 +1318,7 @@ function copyCurrentCode() {
   if (!state.currentFile) return;
   const code = state.generatedFiles[state.currentFile];
   navigator.clipboard.writeText(code).then(() => {
-    showToast('Dosya panoya kopyalandı.');
+    showToast('Dosya panoya kopyalandÃ„Â±.');
   });
 }
 
@@ -1116,11 +1347,23 @@ function downloadAllCode() {
 // ==================== QUICK ACTIONS ====================
 
 function loadDemoData() {
+  const projectTypeInput = document.getElementById('projectType');
+  if (projectTypeInput) projectTypeInput.value = 'webapi';
   document.getElementById('projectName').value = 'SampleStoreApi';
   document.getElementById('rootNamespace').value = 'SampleStoreApi';
   document.getElementById('targetDbProvider').value = 'InMemory';
   document.getElementById('targetFramework').value = 'net8.0';
   document.getElementById('optSwagger').checked = true;
+  const optAuthPack = document.getElementById('optAuthPack');
+  const optProductionPack = document.getElementById('optProductionPack');
+  const optTestGeneration = document.getElementById('optTestGeneration');
+  const optEfMigrations = document.getElementById('optEfMigrations');
+  const optPostmanExport = document.getElementById('optPostmanExport');
+  if (optAuthPack) optAuthPack.checked = false;
+  if (optProductionPack) optProductionPack.checked = true;
+  if (optTestGeneration) optTestGeneration.checked = true;
+  if (optEfMigrations) optEfMigrations.checked = true;
+  if (optPostmanExport) optPostmanExport.checked = true;
 
   state.tables = [
     {
@@ -1168,11 +1411,11 @@ function loadDemoData() {
   renderTables();
   renderDtos();
   persistWorkspace();
-  showToast('Örnek şema yüklendi.');
+  showToast('Ãƒâ€“rnek Ã…Å¸ema yÃƒÂ¼klendi.');
 }
 
 function resetWorkspace() {
-  if (!confirm('Tüm tablo/DTO verisi ve kod çıktısı temizlensin mi? (Standartlar korunur)')) {
+  if (!confirm('TÃƒÂ¼m tablo/DTO verisi ve kod ÃƒÂ§Ã„Â±ktÃ„Â±sÃ„Â± temizlensin mi? (Standartlar korunur)')) {
     return;
   }
 
@@ -1195,10 +1438,24 @@ function resetWorkspace() {
   clearGeneratedView();
   updateStats();
   persistWorkspace();
-  showToast('Çalışma alanı sıfırlandı.');
+  showToast('Ãƒâ€¡alÃ„Â±Ã…Å¸ma alanÃ„Â± sÃ„Â±fÃ„Â±rlandÃ„Â±.');
 }
 
 // ==================== BINDINGS ====================
+
+function bindWorkflowEvents() {
+  document.querySelectorAll('.workflow-step').forEach(step => {
+    step.addEventListener('click', () => {
+      openConfigTab(step.dataset.target || '');
+    });
+  });
+
+  document.querySelectorAll('#configTabs .nav-link').forEach(tabButton => {
+    tabButton.addEventListener('shown.bs.tab', updateWorkflowSteps);
+  });
+
+  updateWorkflowSteps();
+}
 
 function bindFilterEvents() {
   document.getElementById('tableSearch').addEventListener('input', renderTables);
@@ -1207,8 +1464,9 @@ function bindFilterEvents() {
 
 function bindAutoSaveEvents() {
   const ids = [
-    'projectName', 'rootNamespace', 'targetDbProvider', 'targetFramework',
+    'projectType', 'projectName', 'rootNamespace', 'targetDbProvider', 'targetFramework',
     'optSwagger', 'optFluentValidation', 'optAutoMapper',
+    'optAuthPack', 'optProductionPack', 'optTestGeneration', 'optEfMigrations', 'optPostmanExport',
     'dbProvider', 'dbHost', 'dbPort', 'dbName', 'dbUser', 'dbPassword',
     'activeStandardSelect',
     'llmBaseUrl', 'llmModel', 'llmApiKey'
@@ -1256,7 +1514,7 @@ function bindStandardEvents() {
   applyBtn.addEventListener('click', () => {
     const selectedId = standardsList.value;
     if (!selectedId) {
-      alert('Lütfen bir standart seçin.');
+      alert('LÃƒÂ¼tfen bir standart seÃƒÂ§in.');
       return;
     }
     setActiveStandard(selectedId, true);
@@ -1269,6 +1527,27 @@ function bindStandardEvents() {
   enhanceBtn.addEventListener('click', enhanceSelectedStandardWithLlm);
   downloadBtn.addEventListener('click', downloadSelectedStandardDocument);
   deleteBtn.addEventListener('click', deleteSelectedStandard);
+}
+
+function bindSettingsEvents() {
+  const toggleTokenBtn = document.getElementById('toggleLlmTokenBtn');
+  const tokenInput = document.getElementById('llmApiKey');
+  const checkBtn = document.getElementById('checkLlmStatusBtn');
+
+  if (toggleTokenBtn && tokenInput) {
+    toggleTokenBtn.addEventListener('click', () => {
+      const isHidden = tokenInput.type === 'password';
+      tokenInput.type = isHidden ? 'text' : 'password';
+      toggleTokenBtn.innerHTML = isHidden ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+    });
+  }
+
+  if (checkBtn) {
+    checkBtn.addEventListener('click', async () => {
+      await syncLlmStatus();
+      showToast('LLM ayari kontrol edildi.');
+    });
+  }
 }
 
 document.getElementById('dbProvider').addEventListener('change', function onProviderChange() {
@@ -1285,9 +1564,11 @@ renderDtos();
 renderStandardSelects();
 clearGeneratedView();
 updateStats();
+bindWorkflowEvents();
 bindFilterEvents();
 bindAutoSaveEvents();
 bindShortcuts();
 bindStandardEvents();
+bindSettingsEvents();
 syncLlmStatus();
 

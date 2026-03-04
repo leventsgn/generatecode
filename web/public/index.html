@@ -42,6 +42,29 @@
     <div class="row g-3">
       <div class="col-lg-5">
         <section class="panel config-panel reveal">
+          <div class="workflow-strip">
+            <button type="button" class="workflow-step" data-target="#tabDatabase">
+              <span class="step-index">1</span>
+              <span class="step-label">Veritabani</span>
+            </button>
+            <button type="button" class="workflow-step" data-target="#tabTables">
+              <span class="step-index">2</span>
+              <span class="step-label">Tablolar</span>
+            </button>
+            <button type="button" class="workflow-step" data-target="#tabRequests">
+              <span class="step-index">3</span>
+              <span class="step-label">DTO</span>
+            </button>
+            <button type="button" class="workflow-step" data-target="#tabStandards">
+              <span class="step-index">4</span>
+              <span class="step-label">Standartlar</span>
+            </button>
+            <button type="button" class="workflow-step" data-target="#tabSettings">
+              <span class="step-index">5</span>
+              <span class="step-label">Ayarlar</span>
+            </button>
+          </div>
+
           <div class="tabs-shell">
             <ul class="nav nav-tabs" id="configTabs">
               <li class="nav-item">
@@ -197,67 +220,127 @@
 
               <div class="tab-pane fade" id="tabSettings">
                 <h6 class="panel-title mb-1">Proje Ayarlari</h6>
-                <p class="section-subtitle mb-3">Uretilecek projenin temel parametreleri.</p>
-                <div class="row g-2">
-                  <div class="col-12">
-                    <label class="form-label small">Aktif Standart Profili</label>
-                    <select id="activeStandardSelect" class="form-select form-select-sm">
-                      <option value="">Varsayilan (standart yok)</option>
-                    </select>
-                    <small class="text-muted">Secilen standart, kod uretiminde adlandirma ve altyapi tercihlerini etkiler.</small>
+                <p class="section-subtitle mb-3">Adim adim ayarla, sonra tek tikla kod uret.</p>
+
+                <div class="settings-group mb-3">
+                  <div class="settings-group-title">Standart Profili</div>
+                  <label class="form-label small">Aktif Standart</label>
+                  <select id="activeStandardSelect" class="form-select form-select-sm">
+                    <option value="">Varsayilan (standart yok)</option>
+                  </select>
+                  <small class="text-muted d-block mt-2">Secilen standart, adlandirma ve route kurallarini dogrudan etkiler.</small>
+                </div>
+
+                <div class="settings-group mb-3">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="settings-group-title mb-0">LLM Ayarlari</div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="checkLlmStatusBtn">
+                      <i class="bi bi-activity me-1"></i>Kontrol Et
+                    </button>
                   </div>
-                  <div class="col-12 mt-2">
-                    <h6 class="panel-title mb-1">LLM Ayarlari</h6>
-                    <p class="section-subtitle mb-2">Ekrandan girilen degerler sunucu env ayarlarini ezer.</p>
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label small">LLM Base URL</label>
-                    <input type="text" id="llmBaseUrl" class="form-control form-control-sm" value="https://api.groq.com/openai/v1" placeholder="https://api.groq.com/openai/v1">
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label small">LLM Model</label>
-                    <input type="text" id="llmModel" class="form-control form-control-sm" value="openai/gpt-oss-120b" placeholder="openai/gpt-oss-120b">
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label small">LLM Token</label>
-                    <input type="password" id="llmApiKey" class="form-control form-control-sm" placeholder="gsk_...">
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label small">Proje Adi</label>
-                    <input type="text" id="projectName" class="form-control form-control-sm" value="MyApi">
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label small">Namespace</label>
-                    <input type="text" id="rootNamespace" class="form-control form-control-sm" value="MyApi">
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label small">DB Provider</label>
-                    <select id="targetDbProvider" class="form-select form-select-sm">
-                      <option value="InMemory">InMemory</option>
-                      <option value="SqlServer">SQL Server</option>
-                      <option value="PostgreSQL">PostgreSQL</option>
-                      <option value="MySQL">MySQL</option>
-                    </select>
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label small">Framework</label>
-                    <select id="targetFramework" class="form-select form-select-sm">
-                      <option value="net8.0">.NET 8</option>
-                      <option value="net9.0">.NET 9</option>
-                    </select>
-                  </div>
-                  <div class="col-12">
-                    <div class="form-check form-check-inline mt-2">
-                      <input class="form-check-input" type="checkbox" id="optSwagger" checked>
-                      <label class="form-check-label small">Swagger</label>
+                  <p class="section-subtitle mb-2">Ekrandan girilen degerler, server env ayarlarini bu oturum icin ezer.</p>
+
+                  <div class="row g-2">
+                    <div class="col-12">
+                      <label class="form-label small">Base URL</label>
+                      <input type="text" id="llmBaseUrl" class="form-control form-control-sm" value="https://api.groq.com/openai/v1" placeholder="https://api.groq.com/openai/v1">
                     </div>
-                    <div class="form-check form-check-inline mt-2">
-                      <input class="form-check-input" type="checkbox" id="optFluentValidation">
-                      <label class="form-check-label small">FluentValidation</label>
+                    <div class="col-6">
+                      <label class="form-label small">Model</label>
+                      <input type="text" id="llmModel" class="form-control form-control-sm" value="openai/gpt-oss-120b" placeholder="openai/gpt-oss-120b">
                     </div>
-                    <div class="form-check form-check-inline mt-2">
-                      <input class="form-check-input" type="checkbox" id="optAutoMapper">
-                      <label class="form-check-label small">AutoMapper</label>
+                    <div class="col-6">
+                      <label class="form-label small">Token</label>
+                      <div class="input-group input-group-sm llm-token-group">
+                        <input type="password" id="llmApiKey" class="form-control form-control-sm" placeholder="gsk_...">
+                        <button class="btn btn-outline-dark" type="button" id="toggleLlmTokenBtn" title="Token goster/gizle">
+                          <i class="bi bi-eye"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <small id="llmConfigHint" class="text-muted d-block mt-2">Token girersen bu oturumda ekran ayari kullanilir.</small>
+                </div>
+
+                <div class="settings-group">
+                  <div class="settings-group-title">Uretim Ayarlari</div>
+                  <div class="row g-2">
+                    <div class="col-12">
+                      <label class="form-label small">Proje Tipi</label>
+                      <select id="projectType" class="form-select form-select-sm">
+                        <option value="webapi">Web API</option>
+                        <option value="worker">Worker Service</option>
+                        <option value="windowsservice">Windows Service</option>
+                        <option value="console">Console App</option>
+                        <option value="library">Class Library</option>
+                        <option value="grpc">gRPC Service</option>
+                      </select>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small">Proje Adi</label>
+                      <input type="text" id="projectName" class="form-control form-control-sm" value="MyApi">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small">Namespace</label>
+                      <input type="text" id="rootNamespace" class="form-control form-control-sm" value="MyApi">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small">DB Provider</label>
+                      <select id="targetDbProvider" class="form-select form-select-sm">
+                        <option value="InMemory">InMemory</option>
+                        <option value="SqlServer">SQL Server</option>
+                        <option value="PostgreSQL">PostgreSQL</option>
+                        <option value="MySQL">MySQL</option>
+                      </select>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small">Framework</label>
+                      <select id="targetFramework" class="form-select form-select-sm">
+                        <option value="net8.0">.NET 8</option>
+                        <option value="net9.0">.NET 9</option>
+                      </select>
+                    </div>
+                    <div class="col-12">
+                      <div class="settings-group-title mt-2 mb-1">Opsiyonel Paketler</div>
+                    </div>
+                    <div class="col-12">
+                      <div class="form-check form-check-inline mt-1">
+                        <input class="form-check-input" type="checkbox" id="optAuthPack">
+                        <label class="form-check-label small">Auth (JWT + Refresh + Role)</label>
+                      </div>
+                      <div class="form-check form-check-inline mt-1">
+                        <input class="form-check-input" type="checkbox" id="optProductionPack">
+                        <label class="form-check-label small">API Production Pack</label>
+                      </div>
+                      <div class="form-check form-check-inline mt-1">
+                        <input class="form-check-input" type="checkbox" id="optTestGeneration">
+                        <label class="form-check-label small">xUnit + Moq Test Iskeleti</label>
+                      </div>
+                      <div class="form-check form-check-inline mt-1">
+                        <input class="form-check-input" type="checkbox" id="optEfMigrations">
+                        <label class="form-check-label small">EF Migration + Seed</label>
+                      </div>
+                      <div class="form-check form-check-inline mt-1">
+                        <input class="form-check-input" type="checkbox" id="optPostmanExport">
+                        <label class="form-check-label small">Postman Collection</label>
+                      </div>
+                    </div>
+                    <div class="col-12">
+                      <small class="text-muted">Not: CI/CD uretilmez (isteginize gore kapali).</small>
+                    </div>
+                    <div class="col-12">
+                      <div class="form-check form-check-inline mt-2">
+                        <input class="form-check-input" type="checkbox" id="optSwagger" checked>
+                        <label class="form-check-label small">Swagger</label>
+                      </div>
+                      <div class="form-check form-check-inline mt-2">
+                        <input class="form-check-input" type="checkbox" id="optFluentValidation">
+                        <label class="form-check-label small">FluentValidation</label>
+                      </div>
+                      <div class="form-check form-check-inline mt-2">
+                        <input class="form-check-input" type="checkbox" id="optAutoMapper">
+                        <label class="form-check-label small">AutoMapper</label>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -291,14 +374,17 @@
             </div>
           </div>
           <div class="card-body p-0">
-            <div class="file-tabs-container border-bottom">
-              <ul class="nav nav-tabs file-tabs" id="fileTabs"></ul>
-            </div>
-            <div class="code-container" id="codeContainer">
-              <div class="empty-state text-center py-5">
-                <i class="bi bi-code-square display-4"></i>
-                <p class="mt-3 mb-1">Sol panelden tablo/DTO ekleyip uretime basla.</p>
-                <small>Ornek baslangic icin "Ornek Sema Yukle" butonunu kullanabilirsin.</small>
+            <div class="editor-shell">
+              <aside class="file-explorer" id="fileExplorer">
+                <div class="explorer-header">DOSYALAR</div>
+                <div class="file-explorer-empty">Henuz uretilmis dosya yok.</div>
+              </aside>
+              <div class="code-container" id="codeContainer">
+                <div class="empty-state text-center py-5">
+                  <i class="bi bi-code-square display-4"></i>
+                  <p class="mt-3 mb-1">Sol panelden tablo/DTO ekleyip uretime basla.</p>
+                  <small>Ornek baslangic icin "Ornek Sema Yukle" butonunu kullanabilirsin.</small>
+                </div>
               </div>
             </div>
           </div>
