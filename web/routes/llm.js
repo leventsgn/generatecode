@@ -465,6 +465,43 @@ function buildDiagramPackMessages(targetProject, designStandard) {
   ];
 }
 
+function buildRequirementsAnalysisMessages(targetProject, designStandard, businessContext) {
+  const standardPayload = designStandard && typeof designStandard === 'object' ? designStandard : {};
+  const contextPayload = String(businessContext || '').trim();
+
+  return [
+    {
+      role: 'system',
+      content: 'You are a senior business analyst and software architect. Return ONLY markdown.'
+    },
+    {
+      role: 'user',
+      content: [
+        'Create a software requirements analysis document from the given project summary.',
+        'Output markdown in Turkish with these sections in order:',
+        '1) Amac ve Kapsam',
+        '2) Paydaslar',
+        '3) Fonksiyonel Gereksinimler (FR-001 formati ile)',
+        '4) Fonksiyonel Olmayan Gereksinimler (NFR-001 formati ile)',
+        '5) Kisitlar ve Bagimliliklar',
+        '6) Varsayimlar',
+        '7) Kapsam Disi Maddeler',
+        '8) Onceliklendirilmis MVP Backlog (Must/Should/Could)',
+        '9) Acik Sorular ve Riskler',
+        'Each requirement must include a short acceptance criterion bullet.',
+        '',
+        'Design standard (optional context):',
+        JSON.stringify(standardPayload, null, 2),
+        '',
+        `Business context (optional): ${contextPayload || '-'}`,
+        '',
+        'Target project summary:',
+        JSON.stringify(targetProject, null, 2)
+      ].join('\n')
+    }
+  ];
+}
+
 async function executeChatCompletion(llmConfig, requestBody) {
   let response;
   try {
@@ -862,6 +899,62 @@ router.post('/generate-diagram-pack', async (req, res) => {
   return res.json({
     success: true,
     diagrams,
+    meta: {
+      provider: 'groq-openai-compatible',
+      model: requestBody.model,
+      baseUrl: llmConfig.baseUrl
+    }
+  });
+});
+
+router.post('/analyze-requirements', async (req, res) => {
+  const llmConfig = resolveLlmConfig(req.body?.llmConfig);
+  if (!ensureLlmConfig(llmConfig, res)) {
+    return undefined;
+  }
+
+  const targetProject = req.body?.targetProject;
+  if (!targetProject || typeof targetProject !== 'object') {
+    return res.status(400).json({
+      success: false,
+      message: 'targetProject payload is required.'
+    });
+  }
+
+  const designStandard = req.body?.designStandard && typeof req.body.designStandard === 'object'
+    ? req.body.designStandard
+    : null;
+  const businessContext = String(req.body?.businessContext || '').trim().slice(0, 8000);
+
+  const requestBody = {
+    model: llmConfig.model,
+    temperature: 0.25,
+    messages: buildRequirementsAnalysisMessages(targetProject, designStandard, businessContext)
+  };
+
+  let result;
+  try {
+    result = await executeChatCompletion(llmConfig, requestBody);
+  } catch (error) {
+    return res.status(502).json({
+      success: false,
+      message: error.message,
+      detail: error.detail || ''
+    });
+  }
+
+  const content = result?.choices?.[0]?.message?.content || '';
+  const requirementsDocument = extractMarkdownPayload(content);
+  if (!requirementsDocument) {
+    return res.status(502).json({
+      success: false,
+      message: 'LLM response did not include a requirements document.'
+    });
+  }
+
+  return res.json({
+    success: true,
+    requirementsDocument,
     meta: {
       provider: 'groq-openai-compatible',
       model: requestBody.model,

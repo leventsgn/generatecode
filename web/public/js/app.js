@@ -13,7 +13,8 @@ const state = {
   generatedDesignDocument: null,
   generatedConformanceReport: null,
   generatedAdrPack: [],
-  generatedDiagramPack: null
+  generatedDiagramPack: null,
+  generatedRequirementsAnalysis: null
 };
 
 const STORAGE_KEY = 'generatecode_workspace_v4';
@@ -157,7 +158,8 @@ function getConfigSnapshot() {
     selectedDesignStandardId: state.selectedDesignStandardId || '',
     designStandardName: document.getElementById('designStandardNameInput')?.value || '',
     designDocTitle: document.getElementById('designDocTitleInput')?.value || '',
-    adrCount: document.getElementById('adrCountInput')?.value || '3'
+    adrCount: document.getElementById('adrCountInput')?.value || '3',
+    requirementsContext: document.getElementById('requirementsContextInput')?.value || ''
   };
 }
 
@@ -189,7 +191,8 @@ function applyConfigSnapshot(snapshot = {}) {
     selectedDesignStandardId: '',
     designStandardName: '',
     designDocTitle: '',
-    adrCount: '3'
+    adrCount: '3',
+    requirementsContext: ''
   };
 
   const cfg = { ...defaults, ...snapshot };
@@ -227,9 +230,11 @@ function applyConfigSnapshot(snapshot = {}) {
   const designStandardNameInput = document.getElementById('designStandardNameInput');
   const designDocTitleInput = document.getElementById('designDocTitleInput');
   const adrCountInput = document.getElementById('adrCountInput');
+  const requirementsContextInput = document.getElementById('requirementsContextInput');
   if (designStandardNameInput) designStandardNameInput.value = cfg.designStandardName;
   if (designDocTitleInput) designDocTitleInput.value = cfg.designDocTitle;
   if (adrCountInput) adrCountInput.value = cfg.adrCount;
+  if (requirementsContextInput) requirementsContextInput.value = cfg.requirementsContext;
   state.selectedStandardId = cfg.selectedStandardId || '';
   state.selectedDesignStandardId = cfg.selectedDesignStandardId || '';
 }
@@ -246,7 +251,8 @@ function persistWorkspace() {
     generatedDesignDocument: state.generatedDesignDocument,
     generatedConformanceReport: state.generatedConformanceReport,
     generatedAdrPack: state.generatedAdrPack,
-    generatedDiagramPack: state.generatedDiagramPack
+    generatedDiagramPack: state.generatedDiagramPack,
+    generatedRequirementsAnalysis: state.generatedRequirementsAnalysis
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
@@ -272,6 +278,7 @@ function restoreWorkspace() {
     state.generatedConformanceReport = payload.generatedConformanceReport || null;
     state.generatedAdrPack = Array.isArray(payload.generatedAdrPack) ? payload.generatedAdrPack : [];
     state.generatedDiagramPack = payload.generatedDiagramPack || null;
+    state.generatedRequirementsAnalysis = payload.generatedRequirementsAnalysis || null;
   } catch {
     localStorage.removeItem(STORAGE_KEY);
   }
@@ -612,7 +619,8 @@ async function syncLlmStatus() {
     document.getElementById('generateDesignDocBtn'),
     document.getElementById('generateConformanceBtn'),
     document.getElementById('generateAdrPackBtn'),
-    document.getElementById('generateDiagramPackBtn')
+    document.getElementById('generateDiagramPackBtn'),
+    document.getElementById('generateRequirementsBtn')
   ].filter(Boolean);
   if (!buttons.length) return;
 
@@ -834,6 +842,18 @@ function renderDiagramPackPreview(diagrams = state.generatedDiagramPack) {
   ].join('\n');
 }
 
+function renderRequirementsPreview(requirementsState = state.generatedRequirementsAnalysis) {
+  const preview = document.getElementById('requirementsPreview');
+  if (!preview) return;
+
+  if (!requirementsState || !requirementsState.content) {
+    preview.textContent = 'Henuz gereksinim analizi uretilmedi.';
+    return;
+  }
+
+  preview.textContent = requirementsState.content;
+}
+
 function renderDesignStandardSelects() {
   const select = document.getElementById('designStandardsListSelect');
   if (!select) return;
@@ -858,6 +878,7 @@ function renderDesignStandardSelects() {
   renderConformancePreview();
   renderAdrPackPreview();
   renderDiagramPackPreview();
+  renderRequirementsPreview();
 }
 
 async function readProjectFilesForDesign(inputId) {
@@ -1305,6 +1326,58 @@ async function generateDiagramPackWithLlm() {
   }
 }
 
+async function generateRequirementsAnalysisWithLlm() {
+  const button = document.getElementById('generateRequirementsBtn');
+  if (!button) return;
+
+  const original = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>LLM analiz ediyor...';
+
+  try {
+    const targetFiles = await readProjectFilesForDesign('designTargetUploadInput');
+    const targetProject = buildProjectDesignSummary(targetFiles);
+    const selectedId = document.getElementById('designStandardsListSelect')?.value || state.selectedDesignStandardId;
+    const designStandard = getDesignStandardById(selectedId);
+    const businessContext = document.getElementById('requirementsContextInput')?.value?.trim() || '';
+    const llmConfig = getLlmRuntimeConfig();
+
+    const response = await fetch('/api/llm/analyze-requirements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        targetProject,
+        designStandard: designStandard?.profile || null,
+        businessContext,
+        llmConfig
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Gereksinim analizi uretilmedi.');
+    }
+
+    state.generatedRequirementsAnalysis = {
+      content: data.requirementsDocument || '',
+      generatedAt: new Date().toISOString(),
+      sourceProject: targetProject.projectName,
+      standardId: designStandard?.id || '',
+      standardName: designStandard?.name || '',
+      model: data.meta?.model || ''
+    };
+
+    renderRequirementsPreview();
+    persistWorkspace();
+    showToast('Gereksinim analizi hazirlandi.');
+  } catch (error) {
+    alert(`Gereksinim analizi hatasi: ${error.message}`);
+  } finally {
+    button.disabled = false;
+    button.innerHTML = original;
+  }
+}
+
 function downloadGeneratedDesignDocument() {
   if (!state.generatedDesignDocument?.content) {
     alert('Indirilecek tasarim dokumani yok.');
@@ -1391,6 +1464,22 @@ function downloadDiagramPack() {
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = 'mermaid_diagram_pack.md';
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadRequirementsAnalysis() {
+  if (!state.generatedRequirementsAnalysis?.content) {
+    alert('Indirilecek gereksinim analizi yok.');
+    return;
+  }
+
+  const fileBase = (state.generatedRequirementsAnalysis.sourceProject || 'project').replace(/[^A-Za-z0-9_-]/g, '_');
+  const blob = new Blob([state.generatedRequirementsAnalysis.content], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `${fileBase}_requirements_analysis.md`;
   anchor.click();
   URL.revokeObjectURL(url);
 }
@@ -2176,6 +2265,7 @@ function resetWorkspace() {
   state.generatedConformanceReport = null;
   state.generatedAdrPack = [];
   state.generatedDiagramPack = null;
+  state.generatedRequirementsAnalysis = null;
 
   applyConfigSnapshot({
     selectedStandardId: state.selectedStandardId,
@@ -2194,6 +2284,7 @@ function resetWorkspace() {
   renderConformancePreview();
   renderAdrPackPreview();
   renderDiagramPackPreview();
+  renderRequirementsPreview();
   clearGeneratedView();
   updateStats();
   persistWorkspace();
@@ -2228,6 +2319,7 @@ function bindAutoSaveEvents() {
     'optAuthPack', 'optProductionPack', 'optTestGeneration', 'optEfMigrations', 'optPostmanExport',
     'dbProvider', 'dbHost', 'dbPort', 'dbName', 'dbUser', 'dbPassword',
     'activeStandardSelect', 'designStandardsListSelect', 'designStandardNameInput', 'designDocTitleInput', 'adrCountInput',
+    'requirementsContextInput',
     'llmBaseUrl', 'llmModel', 'llmApiKey'
   ];
 
@@ -2271,6 +2363,8 @@ function bindStandardEvents() {
   const downloadAdrPackBtn = document.getElementById('downloadAdrPackBtn');
   const generateDiagramPackBtn = document.getElementById('generateDiagramPackBtn');
   const downloadDiagramPackBtn = document.getElementById('downloadDiagramPackBtn');
+  const generateRequirementsBtn = document.getElementById('generateRequirementsBtn');
+  const downloadRequirementsBtn = document.getElementById('downloadRequirementsBtn');
 
   if (!analyzeBtn || !standardsList || !applyBtn || !enhanceBtn || !activeSelect || !downloadBtn || !deleteBtn) {
     return;
@@ -2350,6 +2444,14 @@ function bindStandardEvents() {
   if (downloadDiagramPackBtn) {
     downloadDiagramPackBtn.addEventListener('click', downloadDiagramPack);
   }
+
+  if (generateRequirementsBtn) {
+    generateRequirementsBtn.addEventListener('click', generateRequirementsAnalysisWithLlm);
+  }
+
+  if (downloadRequirementsBtn) {
+    downloadRequirementsBtn.addEventListener('click', downloadRequirementsAnalysis);
+  }
 }
 
 function bindSettingsEvents() {
@@ -2390,6 +2492,7 @@ renderDesignDocumentPreview();
 renderConformancePreview();
 renderAdrPackPreview();
 renderDiagramPackPreview();
+renderRequirementsPreview();
 clearGeneratedView();
 updateStats();
 bindWorkflowEvents();
