@@ -1,0 +1,107 @@
+body {
+  background-color: #f0f2f5;
+  font-size: 14px;
+}
+
+.file-tabs-container {
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.file-tabs {
+  flex-wrap: nowrap;
+  border-bottom: none;
+}
+
+.file-tabs .nav-link {
+  font-size: 12px;
+  padding: 6px 14px;
+  color: #555;
+  border-radius: 0;
+  white-space: nowrap;
+}
+
+.file-tabs .nav-link.active {
+  background: #1e1e1e;
+  color: #fff;
+  border-color: transparent;
+}
+
+.code-container {
+  background: #1e1e1e;
+  min-height: 500px;
+  max-height: 75vh;
+  overflow: auto;
+}
+
+.code-container pre {
+  margin: 0;
+  padding: 16px;
+  background: transparent !important;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.code-container code {
+  font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+}
+
+.table-card {
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.table-card:hover {
+  background: #e9ecef;
+  border-color: #0d6efd;
+}
+
+.table-card .table-name {
+  font-weight: 600;
+  color: #212529;
+}
+
+.table-card .table-info {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.dto-card {
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.dto-card:hover {
+  background: #e9ecef;
+  border-color: #0d6efd;
+}
+
+.badge-request { background-color: #0d6efd; }
+.badge-response { background-color: #198754; }
+
+#dbTablesList .form-check {
+  padding: 6px 12px 6px 36px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  background: #fff;
+}
+
+.nav-tabs .nav-link {
+  font-size: 13px;
+}
+
+.modal-body .table input[type="text"],
+.modal-body .table select {
+  font-size: 12px;
+}

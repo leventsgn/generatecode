@@ -38,5 +38,9 @@ launchSettings.json
 .DS_Store
 Thumbs.db
 
+## Node.js
+node_modules/
+web/node_modules/
+
 ## Output
 output/
